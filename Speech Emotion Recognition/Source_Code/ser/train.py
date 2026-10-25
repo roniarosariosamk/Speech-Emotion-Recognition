@@ -4,12 +4,14 @@ from __future__ import annotations
 import time
 
 import numpy as np
-import keras
-from sklearn.model_selection import GridSearchCV, PredefinedSplit
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
-from sklearn.utils.class_weight import compute_class_weight
+
+from tensorflow import keras  # pyright: ignore[reportMissingModuleSource]
+
+from sklearn.model_selection import GridSearchCV, PredefinedSplit  # pyright: ignore[reportMissingModuleSource]
+from sklearn.pipeline import make_pipeline  # pyright: ignore[reportMissingModuleSource]
+from sklearn.preprocessing import StandardScaler  # pyright: ignore[reportMissingModuleSource]
+from sklearn.svm import SVC  # pyright: ignore[reportMissingModuleSource]
+from sklearn.utils.class_weight import compute_class_weight  # pyright: ignore[reportMissingModuleSource]
 
 from .features import summary_stats
 from .model import build_model
@@ -36,7 +38,7 @@ def train_svm_baseline(Xtr, ytr, Xva, yva):
 def train_deep(Xtr, ytr, Xva, yva, cfg, model_path: str):
     """Train the deep model and select its checkpoint using validation Macro F1."""
     import os
-    from sklearn.metrics import f1_score
+    from sklearn.metrics import f1_score  # pyright: ignore[reportMissingModuleSource]
 
     t = cfg.train
     set_seed(t.seed)

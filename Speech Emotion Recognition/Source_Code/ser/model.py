@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
-import keras
-from keras import layers
+from tensorflow import keras  # pyright: ignore[reportMissingModuleSource]
+
+layers = keras.layers
 
 
 @keras.saving.register_keras_serializable(package="ser")

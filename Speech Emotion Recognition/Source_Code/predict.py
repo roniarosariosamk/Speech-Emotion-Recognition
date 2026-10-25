@@ -6,10 +6,18 @@ Usage:
     python predict.py --help
 """
 
-import argparse
+# pyright: reportMissingImports=false
+# pyright: reportMissingModuleSource=false
 
+import argparse
 import numpy as np
-import keras
+
+try:
+    from tensorflow import keras
+except ImportError as exc:  # pragma: no cover
+    raise RuntimeError(
+        "TensorFlow is required to run this script. Install it with `pip install tensorflow`."
+    ) from exc
 
 from ser import model as _m  # Registers the custom AttentionPool layer
 from ser.config import LABELS, ROOT, AudioCfg
