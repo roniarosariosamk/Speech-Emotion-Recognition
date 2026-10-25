@@ -1,0 +1,15 @@
+
+data/RAVDESS/Audio_Speech_Actors_01-24.zip
+
+Speech Emotion Recognition/Source_Code/data/RAVDESS/Audio_Speech_Actors_01-24.zip
+# RAVDESS dataset (large audio files)
+data/RAVDESS/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Temporary model checkpoints and test models
+models/checkpoint_test.keras
+models/save_test.keras
+models/ser_model_before_retry.keras
