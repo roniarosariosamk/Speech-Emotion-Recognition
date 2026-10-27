@@ -2,6 +2,8 @@
 import numpy as np
 import pytest
 
+pytest.importorskip("tensorflow", reason="TensorFlow not installed in this Python (use Python 3.10-3.13)")
+
 from ser import data as D, features as F
 from ser.config import LABELS, Cfg
 from ser.model import build_model

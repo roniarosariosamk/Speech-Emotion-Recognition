@@ -20,9 +20,9 @@ def compute_metrics(y_true, y_pred, labels):
     p, r, f, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(labels)), zero_division=0)
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
-        "macro_f1": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
-        "weighted_f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
-        "micro_f1": float(f1_score(y_true, y_pred, average="micro", zero_division=0)),
+        "macro_f1": float(f1_score(y_true, y_pred, labels=list(range(len(labels))), average="macro", zero_division=0)),
+        "weighted_f1": float(f1_score(y_true, y_pred, labels=list(range(len(labels))), average="weighted", zero_division=0)),
+        "micro_f1": float(f1_score(y_true, y_pred, labels=list(range(len(labels))), average="micro", zero_division=0)),
         "per_class": {l: {"precision": float(p[i]), "recall": float(r[i]), "f1": float(f[i]), "support": int(s[i])}
                       for i, l in enumerate(labels)},
         "confusion_matrix": confusion_matrix(y_true, y_pred, labels=range(len(labels))).tolist(),

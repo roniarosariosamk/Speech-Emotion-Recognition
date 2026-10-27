@@ -1,0 +1,14 @@
+SPEECH EMOTION RECOGNITION - SUBMISSION PACKAGE
+================================================
+Speech_Emotion_Recognition_Report.pdf          14-page academic report
+Speech_Emotion_Recognition_Presentation.pptx   12-slide presentation
+README_PROJECT_OVERVIEW.md                     short overview
+Source_Code/README.md                          full instructions (install, train, evaluate, predict)
+Source_Code/ser/                               source modules
+Source_Code/tests/                             25 automated tests
+Source_Code/models/                            Experiment 1 model + experiment_02, _03, _04 folders (each: .keras model + norm.npz)
+Source_Code/results/                           metrics and figures per experiment; results/final = selected model + summary
+Source_Code/docs/                              audit report, viva guide, GitHub sync guide, verification evidence
+
+Final model: Experiment 3 - test Macro F1 0.5307, accuracy 56.67% (SVM baseline 0.4464). Experiment 4 trained: 0.4783 (lower).
+The RAVDESS audio (650 MB) is not included: put Audio_Speech_Actors_01-24.zip in Source_Code/data/ (see Source_Code/README.md).

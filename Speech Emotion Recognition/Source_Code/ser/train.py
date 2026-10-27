@@ -5,7 +5,7 @@ import time
 
 import numpy as np
 
-from tensorflow import keras  # pyright: ignore[reportMissingModuleSource]
+import keras
 
 from sklearn.model_selection import GridSearchCV, PredefinedSplit  # pyright: ignore[reportMissingModuleSource]
 from sklearn.pipeline import make_pipeline  # pyright: ignore[reportMissingModuleSource]

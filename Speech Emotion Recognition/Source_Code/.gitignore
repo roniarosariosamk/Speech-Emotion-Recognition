@@ -13,3 +13,10 @@ __pycache__/
 models/checkpoint_test.keras
 models/save_test.keras
 models/ser_model_before_retry.keras
+
+# Synthetic smoke-test outputs (never results)
+data/synthetic*/
+results/_smoke/
+models/_smoke/
+.pytest_cache/
+.venv/

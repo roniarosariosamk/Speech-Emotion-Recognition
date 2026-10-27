@@ -1,0 +1,47 @@
+﻿Python 3.12.3 | Linux-6.18.44-fc-v165-x86_64-with-glibc2.39
+PASS  Python version supported by TensorFlow 2.21 (3.10-3.13)  Python 3.12.3 on Linux
+PASS  check_env.py (all packages import)
+PASS  pytest: zero failures, zero skips  25 passed
+PASS  summarize_results.py (metrics re-verified, model selected)  [final] selected experiment_03 (Experiment 3); val macro-F1 0.5161, test macro-F1 0.5307
+PASS  predict.py: experiment_03 model + normaliser -> 8 finite probabilities summing to 1  REAL audio (functional check); sum=1.000000; top=angry
+
+$ /usr/bin/python3 check_env.py
+Python 3.12.3
+  [ok] numpy        2.4.4
+  [ok] pandas       3.0.2
+  [ok] scipy        1.17.1
+  [ok] sklearn      1.8.0
+  [ok] librosa      1.0.0
+  [ok] soundfile    0.14.0
+  [ok] matplotlib   3.10.8
+  [ok] tensorflow   2.21.0
+  [ok] keras        3.15.1
+
+Environment OK
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793065508.215291     347 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793065533.039298     347 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+
+$ /usr/bin/python3 -m pytest -q -p no:cacheprovider -rs
+.........................                                                [100%]
+=============================== warnings summary ===============================
+tests/test_pipeline.py: 25 warnings
+tests/test_project.py: 50 warnings
+  /usr/local/lib/python3.12/dist-packages/keras/src/backend/tensorflow/core.py:172: DeprecationWarning: __array__ implementation doesn't accept a copy keyword, so passing copy=False failed. __array__ must implement 'dtype' and 'copy' keyword arguments. To learn more, see the migration guide https://numpy.org/devdocs/numpy_2_0_migration_guide.html#adapting-to-changes-in-the-copy-keyword
+    return np.array(x)
+
+tests/test_project.py::test_augmentation_only_when_requested
+  /usr/local/lib/python3.12/dist-packages/librosa/effects.py:448: FutureWarning: The `hop_length` parameter is deprecated as of 1.0 and will be removed in 1.1. It is unused in the current implementation.
+    stft_stretch = core.phase_vocoder(
+
+tests/test_project.py::test_augmentation_only_when_requested
+  /usr/local/lib/python3.12/dist-packages/librosa/effects.py:448: FutureWarning: The `n_fft` parameter is deprecated as of 1.0 and will be removed in 1.1. It is unused in the current implementation.
+    stft_stretch = core.phase_vocoder(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+25 passed, 77 warnings in 22.88s
+
+$ /usr/bin/python3 summarize_results.py
+[final] selected experiment_03 (Experiment 3); val macro-F1 0.5161, test macro-F1 0.5307
+[final] wrote /home/claude/release/Speech Emotion Recognition/Source_Code/results/final

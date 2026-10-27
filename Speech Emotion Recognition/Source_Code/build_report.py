@@ -1,4 +1,9 @@
-"""Generate the project-report PDF from results/metrics.json  (python build_report.py [--name "Your Name"])."""
+"""Generate the project report PDF from the REAL final results (results/final/final_summary.json).
+
+    python summarize_results.py                      # first (verifies metrics, selects model, makes figures)
+    python build_report.py --name "Your Name" --roll "ID"
+Every number in the report is read from the saved metrics; nothing is hard-coded.
+"""
 import argparse
 import json
 from datetime import date
@@ -9,22 +14,24 @@ from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import (BaseDocTemplate, Frame, Image, KeepTogether, PageBreak, PageTemplate,
+from reportlab.platypus import (BaseDocTemplate, Frame, Image, KeepTogether, NextPageTemplate, PageBreak, PageTemplate,
                                 Paragraph, Spacer, Table, TableStyle)
 from reportlab.platypus.tableofcontents import TableOfContents
 
 ROOT = Path(__file__).resolve().parent
-RES = ROOT / "results"
+RES = ROOT / "results" / "final"
 INDIGO, SLATE, LIGHT, AMBER = colors.HexColor("#4F46E5"), colors.HexColor("#1E293B"), colors.HexColor("#EEF2FF"), colors.HexColor("#F59E0B")
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--name", default="Student Name"); ap.add_argument("--roll", default="")
-ap.add_argument("--out", default=str(ROOT / "Speech_Emotion_Recognition_Report.pdf"))
+ap.add_argument("--name", default="Ronia"); ap.add_argument("--roll", default="")
+ap.add_argument("--out", default=str(ROOT.parent / "Speech_Emotion_Recognition_Report.pdf"))
 args = ap.parse_args()
-M = json.loads((RES / "metrics.json").read_text())
-SYN = M["synthetic"]
-deep, svm, tr = M["deep"], M["svm"], M["training"]
-
+if not (RES / "final_summary.json").is_file():
+    raise SystemExit("results/final/final_summary.json not found - run:  python summarize_results.py")
+S_ = json.loads((RES / "final_summary.json").read_text())
+SYN = False
+SEL = S_["selected_final_model"]; T = SEL["test"]; CFGM = SEL["config"]; SVM = S_["svm_baseline"]; DS = S_["dataset"]
+EXPS = {r["experiment"]: r for r in S_["experiments"]}
 ss = getSampleStyleSheet()
 BODY = ParagraphStyle("body", parent=ss["BodyText"], fontName="Helvetica", fontSize=10, leading=15, alignment=TA_JUSTIFY, textColor=SLATE, spaceAfter=7)
 H1 = ParagraphStyle("h1", parent=ss["Heading1"], fontName="Helvetica-Bold", fontSize=17, leading=21, textColor=INDIGO, spaceBefore=6, spaceAfter=10)
@@ -70,6 +77,8 @@ def fig(name, width_cm, caption):
     w, h = PI.open(RES / name).size
     return KeepTogether([Image(str(RES / name), width=width_cm * cm, height=width_cm * cm * h / w), P(caption, CAP)])
 def table(data, widths, hl_rows=(), left=False):
+    _cs = ParagraphStyle("cell0", parent=BODY, fontSize=8.8, leading=11, alignment=0, spaceAfter=0)
+    data = [[Paragraph(c, _cs) if (isinstance(c, str) and len(c) > 42 and r > 0) else c for c in row] for r, row in enumerate(data)]
     t = Table(data, colWidths=[x * cm for x in widths], repeatRows=1)
     st = [("BACKGROUND", (0, 0), (-1, 0), INDIGO), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white), ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
           ("FONTSIZE", (0, 0), (-1, -1), 8.8), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]), ("GRID", (0, 0), (-1, -1), .4, colors.HexColor("#CBD5E1")),
@@ -79,160 +88,237 @@ def table(data, widths, hl_rows=(), left=False):
     t.setStyle(TableStyle(st)); return t
 
 f4 = lambda x: f"{x:.4f}"
+import numpy as np
+
+f4 = lambda x: f"{x:.4f}"
+pct = lambda x: f"{x * 100:.2f}%"
+pc = T["per_class"]; cmat = np.array(T["confusion_matrix"]); npred = cmat.sum(0)
+LAB = list(pc)
+best = max(pc.items(), key=lambda kv: kv[1]["f1"]); worst = min(pc.items(), key=lambda kv: kv[1]["f1"])
+low_rec = sorted(pc.items(), key=lambda kv: kv[1]["recall"])[:3]
+tc = SEL["top_confusions"]
+done = [r for r in S_["experiments"] if r["status"] == "completed"]
+E4 = EXPS["experiment_04"]["status"] == "completed"
+N_EXP = len(done)
+sp = DS["split"]
 S = []
+P = lambda t, s=BODY: Paragraph(t, s)
+TOCH = ParagraphStyle("t0", parent=BODY)
+
+
+def bullets(items): return [Paragraph(i, BUL, bulletText="\u2022") for i in items]
+
+
+def plain(t): return P("<b>In plain words:</b> " + t, WARN2)
+
+
+WARN2 = ParagraphStyle("plain", parent=BODY, backColor=colors.HexColor("#ECFEFF"), borderColor=colors.HexColor("#06B6D4"), borderWidth=1,
+                       borderPadding=7, spaceBefore=4, spaceAfter=12, alignment=0, textColor=SLATE)
 
 # ------------------------------------------------------------------ cover
-S += [Spacer(1, 1.3 * cm), P("<font color='white' size=11>INDIVIDUAL MAJOR PROJECT  |  MACHINE LEARNING INTERNSHIP</font>", ParagraphStyle("c0", parent=BODY, alignment=0)),
-      Spacer(1, .5 * cm),
-      P("<font color='white' size=27><b>Speech Emotion Recognition</b></font>", ParagraphStyle("c1", parent=BODY, leading=33, alignment=0)),
-      P("<font color='white' size=15>using MFCC Features and a CNN-BiLSTM-Attention Deep Learning Model</font>", ParagraphStyle("c2", parent=BODY, leading=20, alignment=0)),
-      Spacer(1, 7.2 * cm),
-      table([["Submitted by", args.name + (f"  ({args.roll})" if args.roll else "")], ["Project", "Emotion recognition in speech - MFCC + deep learning, evaluated with F1-score"],
-             ["Dataset", M["dataset"]], ["Framework", "Python, librosa, TensorFlow / Keras, scikit-learn"], ["Date", date.today().strftime("%d %B %Y")]], [3.6, 12.8], left=True),
-      Spacer(1, .6 * cm)]
-if SYN:
-    S.append(P("<b>Note on results.</b> The figures in this copy were produced by the built-in <i>synthetic smoke-test</i> dataset, which only proves that the pipeline runs end to end. "
-               "They are <b>not</b> RAVDESS results. Run <font name='Courier'>python run_pipeline.py --download</font> and then <font name='Courier'>python build_report.py</font> to regenerate this report with real numbers.", WARN))
-S += [PageBreak()]
+S += [Spacer(1, 1.3 * cm), P("<font color='white' size=11>INDIVIDUAL MAJOR PROJECT  |  MACHINE LEARNING INTERNSHIP</font>", ParagraphStyle("c0", parent=BODY, alignment=0)), Spacer(1, .5 * cm),
+      P("<font color='white' size=26><b>Machine Learning System for Emotion Recognition in Speech</b></font>", ParagraphStyle("c1", parent=BODY, leading=32, alignment=0)),
+      P("<font color='white' size=15>Using MFCC Features and a CNN-BiLSTM-Attention Deep Learning Model</font>", ParagraphStyle("c2", parent=BODY, leading=20, alignment=0)),
+      Spacer(1, 6.4 * cm),
+      table([["Submitted by", args.name + (f"  ({args.roll})" if args.roll else "")],
+             ["Task", "Data collection, preprocessing, model implementation and F1-score evaluation"],
+             ["Dataset", f"{DS['name']} - {DS['clips']} clips, {DS['actors']} actors, 8 emotions"],
+             ["Final model", f"{SEL['label']}: {SEL['title']} ({SEL['parameters']:,} parameters)"],
+             ["Headline result", f"Test Macro F1 {f4(T['macro_f1'])} | accuracy {pct(T['accuracy'])} (SVM baseline Macro F1 {f4(SVM['test_macro_f1'])})"],
+             ["Framework", "Python, librosa, TensorFlow / Keras, scikit-learn"], ["Date", date.today().strftime("%d %B %Y")]], [3.6, 12.8], left=True), Spacer(1, .4 * cm),
+      NextPageTemplate("body"), PageBreak()]
 S.append(P("Table of Contents", H1))
-toc = TableOfContents(); toc.levelStyles = [ParagraphStyle("t1", fontName="Helvetica-Bold", fontSize=10.5, leading=17, leftIndent=0), ParagraphStyle("t2", fontName="Helvetica", fontSize=9.5, leading=14, leftIndent=16)]
+toc = TableOfContents(); toc.levelStyles = [ParagraphStyle("t1", fontName="Helvetica-Bold", fontSize=10, leading=13.5, leftIndent=0), ParagraphStyle("t2", fontName="Helvetica", fontSize=9, leading=11.5, leftIndent=16)]
 S += [toc, PageBreak()]
 
 # ------------------------------------------------------------------ abstract
 S += [P("Abstract", H1),
-      P("Speech carries emotional information in addition to words. This project builds an end-to-end machine learning system that recognises eight emotions "
-        "(neutral, calm, happy, sad, angry, fearful, disgust, surprised) from short speech clips. Audio is resampled, trimmed and normalised, then converted into "
-        "<b>Mel-Frequency Cepstral Coefficients (MFCC)</b> with first- and second-order deltas. A <b>CNN-BiLSTM-Attention</b> network learns local spectral patterns, "
-        "long-range temporal context and the most informative frames. The evaluation protocol is <b>speaker-independent</b>: the actors used for testing never appear in training. "
-        "Performance is measured with <b>F1-score</b> (macro, weighted, micro and per class) and compared with a classical RBF-SVM baseline."),
-      P(f"On the held-out test speakers of the <i>{M['dataset']}</i> data the deep model reaches a <b>macro-F1 of {f4(deep['macro_f1'])}</b> (accuracy {f4(deep['accuracy'])}), "
-        f"against {f4(svm['macro_f1'])} for the SVM baseline." + (" These values come from synthetic smoke-test audio and are shown only to demonstrate the pipeline." if SYN else ""))]
-if SYN: S.append(P("<b>Smoke-test copy:</b> metrics in this document are not real-world performance.", WARN))
-S.append(P("<b>Keywords:</b> speech emotion recognition, MFCC, CNN, BiLSTM, attention, RAVDESS, F1-score, speaker-independent evaluation.", BODY))
-S.append(PageBreak())
+      P("Speech carries emotional information in addition to words. This project builds and evaluates a machine learning system that recognises eight emotions (neutral, calm, happy, sad, angry, fearful, disgust, surprised) "
+        "from short speech clips of the RAVDESS corpus. Each clip is resampled, trimmed, normalised and converted into <b>Mel-Frequency Cepstral Coefficients (MFCC)</b> with their first- and second-order derivatives "
+        "(130 frames x 120 features). A compact <b>CNN-BiLSTM-Attention</b> network (" + f"{SEL['parameters']:,}" + " parameters) learns local spectral patterns, temporal context and the most informative frames. "
+        "The evaluation is <b>actor-independent</b>: actors 1-16 are used for training, 17-20 for validation and 21-24 for testing, so no voice appears in more than one partition."),
+      P(f"On the held-out test actors the selected model ({SEL['label']}) obtains a <b>Macro F1 of {f4(T['macro_f1'])}</b>, weighted F1 {f4(T['weighted_f1'])} and accuracy {pct(T['accuracy'])}, compared with a Macro F1 of "
+        f"{f4(SVM['test_macro_f1'])} for a tuned RBF-SVM baseline ({SEL['gain_over_svm_macro_f1']:+.4f}). Performance is uneven across emotions: recall is high for angry and surprised speech but low for sad and fearful speech. "
+        "The results are obtained on acted speech from 24 actors and should not be read as a claim that the system reliably recognises emotion in everyday conversation."),
+      P("<b>Keywords:</b> speech emotion recognition, MFCC, CNN, BiLSTM, attention, RAVDESS, Macro F1, actor-independent evaluation.", BODY), PageBreak()]
 
-# ------------------------------------------------------------------ 1 intro
+# ------------------------------------------------------------------ 1 introduction
 S += [P("1. Introduction", H1),
-      P("Emotion-aware systems - call-centre analytics, tutoring tools, mental-wellbeing assistants and human-robot interaction - need to understand <i>how</i> something is said and not only <i>what</i> is said. "
-        "Speech Emotion Recognition (SER) maps an audio signal to an emotion category. It is difficult because emotion is subjective, expressed differently by each speaker, "
-        "and public datasets are small, so models easily memorise voices instead of learning emotion."),
+      P("Emotion-aware applications such as call-centre analytics, tutoring software, wellbeing assistants and human-robot interaction need to understand <i>how</i> something is said, not only <i>what</i> is said. "
+        "Speech Emotion Recognition (SER) maps an audio signal to an emotion category. It is hard because emotion is subjective, every speaker expresses it differently, and public datasets are small, so models easily learn "
+        "to recognise <i>voices</i> instead of <i>emotions</i>."),
       P("1.1 Problem statement", H2),
-      P("<i>Develop a machine learning system for emotion recognition in speech using MFCC features and a deep learning model. The project should include data collection, preprocessing, "
-        "model implementation, and evaluation using F1-score.</i>"),
-      P("1.2 Objectives and how each is met", H2),
-      table([["Requirement", "Where it is delivered"],
-             ["Data collection", "ser/data.py - automatic RAVDESS download, filename-based labelling, metadata table (Section 4)"],
-             ["Preprocessing", "ser/features.py - resampling, silence trimming, normalisation, fixed-length windows, augmentation (Section 5)"],
-             ["MFCC features", "40 MFCC + delta + delta-delta = 120 features x 130 frames per clip (Section 5.2)"],
-             ["Deep learning model", "ser/model.py - CNN + BiLSTM + attention pooling (Section 6)"],
-             ["Evaluation with F1-score", "ser/evaluate.py - macro / weighted / micro / per-class F1, confusion matrices (Sections 7-8)"],
-             ["Deliverables", "Source code, this PDF report, PowerPoint presentation"]], [4.2, 12.2], left=True),
+      P("<i>Develop a machine learning system for emotion recognition in speech using MFCC features and a deep learning model. The project should include data collection, preprocessing, model implementation, and evaluation using F1-score.</i>"),
+      P("1.2 Objectives and where each is delivered", H2),
+      table([["Objective", "Where it is delivered"],
+             ["Data collection", "ser/data.py - RAVDESS download, filename-based labelling, metadata table (Section 3)"],
+             ["Preprocessing", "ser/features.py - resampling, silence trimming, normalisation, fixed 3 s window, augmentation (Section 4)"],
+             ["MFCC features", "40 MFCC + delta + delta-delta = 120 features x 130 frames per clip (Section 5)"],
+             ["Deep learning model", "ser/model.py - CNN + BiLSTM + temporal attention (Section 6)"],
+             ["Classical baseline", "ser/train.py - RBF-SVM on utterance-level MFCC statistics (Section 7)"],
+             ["F1-score evaluation", "ser/evaluate.py, ser/final.py - macro / weighted / per-class F1, confusion matrices (Sections 8-10)"],
+             ["Deliverables", "Source code, tests, this report, presentation, README, results summary"]], [4.2, 12.2], left=True),
       Spacer(1, .3 * cm), P("1.3 Contributions", H2)]
-S += bullets(["A fully reproducible pipeline (single command) with fixed seeds, configuration dataclasses and unit tests.",
-              "Speaker-independent train/validation/test split that prevents identity leakage, the most common flaw in SER studies.",
-              "A compact CNN-BiLSTM-Attention architecture compared against a tuned classical baseline.",
-              "Complete F1-based analysis: per-class scores, confusion matrices and error discussion."])
+S += bullets(["A reproducible, tested pipeline with a fixed random seed, central configuration and automatic verification of every reported metric.",
+              "An actor-independent split that prevents speaker leakage, a frequent flaw in SER studies.",
+              "A compact CNN-BiLSTM-Attention model compared against a tuned classical baseline over several documented experiments.",
+              "An honest error analysis that separates observed errors from plausible, untested explanations."])
 
 # ------------------------------------------------------------------ 2 background
-S += [P("2. Background", H1),
+S += [P("2. Background on Speech Emotion Recognition", H1),
       P("2.1 MFCC", H2),
-      P("MFCCs (Davis and Mermelstein, 1980) summarise the short-time spectral envelope on the perceptual mel scale. The signal is split into overlapping frames, "
-        "a power spectrum is computed, passed through a mel filter bank, log-compressed and decorrelated with a discrete cosine transform. The first coefficients describe the "
-        "vocal-tract shape, which changes with arousal and emotional state. Delta and delta-delta features add the velocity and acceleration of each coefficient and so capture dynamics."),
-      P("2.2 Deep sequence models", H2),
-      P("1-D convolutions detect local time-frequency patterns, batch normalisation and dropout stabilise training on small data, a bidirectional LSTM (Hochreiter and Schmidhuber, 1997) models context in both "
-        "directions, and additive attention pooling learns a weighted average over frames so that emotionally salient moments (stressed syllables, pauses, pitch peaks) dominate the utterance representation."),
-      P("2.3 F1-score", H2),
-      P("For class c, precision = TP / (TP + FP), recall = TP / (TP + FN) and F1 = 2PR / (P + R). <b>Macro-F1</b> averages F1 over classes with equal weight (the primary metric here, because it "
-        "penalises ignoring minority classes); <b>weighted-F1</b> weights classes by support; <b>micro-F1</b> pools all decisions and equals accuracy in single-label problems.")]
+      P("MFCCs (Davis and Mermelstein, 1980) describe the short-time spectral envelope of speech on the perceptual mel scale. The signal is cut into overlapping frames, each frame is converted to a power spectrum, "
+        "passed through a mel filter bank, log-compressed and decorrelated with a discrete cosine transform. The low-order coefficients mainly describe the shape of the vocal tract, which changes with arousal and speaking style."),
+      plain("MFCCs turn raw sound into a small table of numbers that describes the 'timbre' of the voice at every instant, similar to how the ear perceives it."),
+      P("2.2 Delta and delta-delta features", H2),
+      P("The delta (first derivative) of each coefficient measures how fast it changes between frames; the delta-delta (second derivative) measures how that change accelerates. Emotion is expressed through dynamics - "
+        "an angry voice changes abruptly, a sad voice slowly - so adding both derivatives gives the network information about movement, not only about static timbre."),
+      P("2.3 CNN, BiLSTM and attention", H2),
+      P("A <b>1-D convolutional layer</b> slides small filters along time and detects short local patterns in the MFCC table. A <b>bidirectional LSTM</b> (Hochreiter and Schmidhuber, 1997) reads the sequence forwards and backwards "
+        "and remembers context, for example a rising pitch followed by a pause. <b>Attention pooling</b> (Bahdanau et al., 2015, adapted here to a single utterance-level summary) lets the network learn which frames matter most and take a weighted average of them."),
+      plain("The CNN spots short sound patterns, the BiLSTM understands how they follow each other, and attention decides which moments of the clip deserve the most weight in the final decision."),
+      P("2.4 Macro F1-score", H2),
+      P("For each emotion, precision = TP / (TP + FP) (how often a predicted emotion is right), recall = TP / (TP + FN) (how many real examples are found) and F1 = 2PR / (P + R). "
+        "<b>Macro F1</b> averages the F1 of all classes with equal weight, so a model cannot hide poor performance on one emotion behind good performance on others; this is why it is the primary metric here. "
+        "<b>Weighted F1</b> weights classes by their number of test clips."),
+      plain("Accuracy only counts how many answers are right overall. Macro F1 asks: is the system good at every emotion, not just the easy ones?")]
 
-# ------------------------------------------------------------------ 3 method overview
-S += [P("3. System Overview", H1), P("The system is a linear pipeline. Every stage is a separate, tested Python module.", BODY),
-      fig("diagram_pipeline.png", 16.4, "Figure 1 - End-to-end pipeline."), PageBreak()]
+# ------------------------------------------------------------------ 3 dataset
+cc = DS["class_counts"]
+S += [P("3. Dataset", H1),
+      P("The project uses the <b>Ryerson Audio-Visual Database of Emotional Speech and Song (RAVDESS)</b> (Livingstone and Russo, 2018), available for research under CC BY-NC-SA 4.0. The speech subset has 1,440 recordings: "
+        "24 professional actors (12 female, 12 male) speak two matched sentences in eight emotions at two intensities (neutral has a single intensity, hence 96 neutral clips and 192 of every other emotion). "
+        "Emotion, intensity, statement, repetition and actor are encoded in the filename, for example <font name='Courier'>03-01-05-02-01-01-07.wav</font> = speech, angry, strong intensity, actor 7. "
+        "<b>Collection:</b> <font name='Courier'>python run_pipeline.py --download</font> downloads and unzips the archive; labels are parsed from filenames into a pandas metadata table."),
+      table([["Item", "Value"], ["Dataset", DS["name"]], ["Clips / actors / classes", f"{DS['clips']} / {DS['actors']} / 8"],
+             ["Training", f"{sp['train_clips']} clips, actors {sp['train_actors'][0]}-{sp['train_actors'][-1]} ({sp['train_after_aug']} samples after augmentation)"],
+             ["Validation", f"{sp['val_clips']} clips, actors {sp['val_actors'][0]}-{sp['val_actors'][-1]} (not augmented)"],
+             ["Test", f"{sp['test_clips']} clips, actors {sp['test_actors'][0]}-{sp['test_actors'][-1]} (not augmented)"],
+             ["Class counts", ", ".join(f"{k} {v}" for k, v in cc.items())], ["Random seed", str(DS["seed"])]], [4.6, 11.8], left=True),
+      Spacer(1, .3 * cm), fig("class_distribution.png", 11.5, "Figure 1 - Number of clips per emotion (neutral has half as many clips).")]
 
-# ------------------------------------------------------------------ 4 data
-cc = M["class_counts"]
-S += [P("4. Data Collection", H1),
-      P("The project uses the <b>Ryerson Audio-Visual Database of Emotional Speech and Song (RAVDESS)</b> (Livingstone and Russo, 2018), freely available for research under CC BY-NC-SA 4.0. "
-        "The speech subset contains 1,440 recordings: 24 professional actors (12 female, 12 male) each speaking two lexically matched sentences in eight emotions at two intensities. "
-        "The emotion, intensity, statement, repetition and actor are encoded in each filename (e.g. <font name='Courier'>03-01-05-02-01-01-07.wav</font> = speech, angry, strong, actor 7)."),
-      P("<b>Collection:</b> <font name='Courier'>python run_pipeline.py --download</font> fetches and unzips the archive from Zenodo; labels are parsed from the filename and stored in a pandas metadata table."),
-      table([["Item", "Value"], ["Dataset used in this run", M["dataset"]], ["Clips", str(M["n_clips"])], ["Actors", str(M["n_actors"])], ["Classes", "8"],
-             ["Train clips / actors", f"{M['split']['train_clips']} / {len(M['split']['train_actors'])}"], ["Validation clips / actors", f"{M['split']['val_clips']} / {len(M['split']['val_actors'])}"],
-             ["Test clips / actors", f"{M['split']['test_clips']} / {len(M['split']['test_actors'])}"]], [7, 9.4]),
-      Spacer(1, .3 * cm), fig("class_distribution.png", 12, "Figure 2 - Number of clips per emotion."),
-      P("<b>Speaker-independent split.</b> Actors are assigned to exactly one partition (train / validation / test) and an assertion in the code guards against overlap. "
-        "A random clip-level split would put the same voice in training and test sets and inflate scores, because the model could recognise the speaker rather than the emotion.")]
+# ------------------------------------------------------------------ 4 preprocessing
+S += [P("4. Data Preprocessing", H1), fig("diagram_pipeline.png", 16.4, "Figure 2 - End-to-end pipeline."), P("Every clip passes through the same steps:")]
+S += bullets(["<b>Resampling</b> to 22,050 Hz mono (RAVDESS is recorded at 48 kHz).",
+              "<b>Silence trimming</b> (30 dB threshold) and <b>peak normalisation</b> remove leading/trailing silence and loudness differences.",
+              "<b>Fixed 3-second window</b>: centre crop or zero-padding, so every clip yields a tensor of the same shape.",
+              f"<b>Augmentation (training clips only)</b>: two extra copies per clip, each with one random transformation - Gaussian noise, pitch shift (+/-2 semitones), time stretch (0.9-1.1x) or time shift - giving {sp['train_after_aug']:,} training samples. Validation and test clips are never augmented.",
+              "<b>Standardisation</b>: per-feature mean and standard deviation are computed on the <b>training set only</b>, saved to <font name='Courier'>norm.npz</font>, and re-used unchanged for validation, test and inference.",
+              "<b>Input validation</b>: unreadable, empty or silent audio raises a clear error instead of producing a silent wrong prediction."])
 
-# ------------------------------------------------------------------ 5 preprocessing
-S += [P("5. Pre-processing and Feature Extraction", H1), P("5.1 Pre-processing steps", H2)]
-S += bullets(["<b>Resampling</b> to 22,050 Hz mono (RAVDESS is 48 kHz) - reduces cost, retains speech-relevant bandwidth.",
-              "<b>Silence trimming</b> with a 30 dB threshold, then <b>peak normalisation</b> to remove loudness differences between recordings.",
-              "<b>Fixed 3-second window</b>: centre crop or zero-pad so every sample yields the same tensor shape.",
-              "<b>Data augmentation</b> (training clips only, "
-              f"{M['training'].get('aug_copies', 2) if 'aug_copies' in M['training'] else 2} extra copies each): Gaussian noise, pitch shift (+/-2 semitones), time stretch (0.9-1.1x), time shift. "
-              f"Training set grows to {M['split']['train_after_aug']} samples. Validation and test data are never augmented.",
-              "<b>Standardisation</b>: per-coefficient mean and standard deviation fitted on the training set only and re-used for validation, test and inference."])
-S += [P("5.2 MFCC configuration", H2),
-      table([["Parameter", "Value"], ["Sampling rate", f"{M['features']['sr']} Hz"], ["MFCC coefficients", str(M['features']['n_mfcc'])], ["FFT window / hop", f"2048 / {M['features']['hop']} samples"],
-             ["Mel bands", "128"], ["Features per frame", "120 (MFCC + delta + delta-delta)"], ["Input tensor per clip", f"{M['features']['shape'][0]} frames x {M['features']['shape'][1]} features"]], [7, 9.4]),
-      Spacer(1, .3 * cm), fig("mfcc_example.png", 13, "Figure 3 - MFCC matrix of a test clip (first 40 coefficients shown).")]
+# ------------------------------------------------------------------ 5 MFCC
+ft = DS["features"]
+S += [P("5. MFCC Feature Extraction", H1),
+      table([["Parameter", "Value"], ["Sampling rate", f"{ft['sr']} Hz"], ["Clip length", f"{ft['duration']} s"], ["MFCC coefficients", str(ft["n_mfcc"])], ["FFT size / hop length", f"{ft['n_fft']} / {ft['hop']} samples"],
+             ["Mel bands", str(ft["n_mels"])], ["Features per frame", "120 = 40 MFCC + 40 delta + 40 delta-delta"], ["Tensor per clip", f"{ft['shape'][0]} frames x {ft['shape'][1]} features"]], [6, 10.4]),
+      Spacer(1, .3 * cm), fig("mfcc_example.png", 13, "Figure 3 - MFCC matrix of a test clip (first 40 coefficients shown)."),
+      P("The tensor shape (130, 120) was confirmed from the saved experiment metadata and by the unit tests, which extract features from audio and check the shape and finiteness.")]
 
-# ------------------------------------------------------------------ 6 model
-S += [PageBreak(), P("6. Model Implementation", H1),
-      P("The model (<font name='Courier'>ser/model.py</font>, Keras 3) processes the MFCC sequence in three stages:"),
-      fig("diagram_architecture.png", 16.4, "Figure 4 - CNN-BiLSTM-Attention architecture.")]
-S += bullets(["<b>Convolutional front-end</b> - three Conv1D blocks (64, 128, 128 filters) with batch norm, ReLU, max-pooling and dropout reduce 130 frames to 16 while learning local spectral patterns.",
-              "<b>Bidirectional LSTM (96 units)</b> - models how the pattern evolves forward and backward in time.",
-              "<b>Additive attention pooling</b> - a small tanh network scores each frame, softmax normalises the scores, and the weighted sum becomes the utterance embedding.",
-              "<b>Classifier</b> - Dense(128) + dropout 0.4 + softmax over eight emotions."])
-S += [P(f"The network has <b>{tr['params']:,}</b> trainable parameters. L2 weight decay (1e-4), dropout, Gaussian input noise and early stopping combat over-fitting on the small corpus."),
-      P("6.1 Baseline", H2),
-      P(f"An RBF-SVM is trained on utterance-level statistics (mean and standard deviation of every feature over time, 240 dimensions) with standardisation and balanced class weights. "
-        f"C and gamma are tuned on the validation actors (selected: C = {svm['params']['C']}, gamma = {svm['params']['gamma']}). It shows how much the sequence model adds."),
-      P("6.2 Training setup", H2),
-      table([["Setting", "Value"], ["Optimiser", "Adam, lr 1e-3, ReduceLROnPlateau (factor 0.5)"], ["Loss", "Sparse categorical cross-entropy + balanced class weights"],
-             ["Batch size", str(tr['batch_size'])], ["Max epochs / run", f"{tr['epochs_max']} / {tr['epochs_run']} (early stopping on val loss)"],
-             ["Random seed", str(tr['seed'])], ["Training time", f"{tr['seconds']:.0f} s (CPU)"]], [7, 9.4])]
+# ------------------------------------------------------------------ 6 architecture
+cf = CFGM
+S += [PageBreak(), P("6. Proposed CNN-BiLSTM-Attention Architecture", H1),
+      P(f"The final model is the compact network of <b>{SEL['label']}</b> ({SEL['parameters']:,} trainable parameters). It processes the MFCC sequence in four stages:"),
+      fig("diagram_architecture.png", 16.4, "Figure 4 - Architecture of the selected model (values read from the trained checkpoint).")]
+S += bullets([f"<b>Gaussian input noise</b> (sigma {cf['gaussian_noise']}) acts as a regulariser during training only.",
+              f"<b>Two Conv1D blocks</b> ({cf['conv1']['filters']} filters, kernel {cf['conv1']['kernel']}; {cf['conv2']['filters']} filters, kernel {cf['conv2']['kernel']}), each with batch normalisation, ReLU, max-pooling and dropout ({cf['conv1']['dropout']}, {cf['conv2']['dropout']}); 130 frames are reduced to 32.",
+              f"<b>Bidirectional LSTM</b> ({cf['lstm']['units']} units per direction, dropout {cf['lstm']['dropout']}) returns one vector per time step.",
+              f"<b>Additive attention pooling</b> ({cf['attention_units']} units): a small tanh network scores every frame, a softmax turns the scores into weights, and the weighted sum is the utterance embedding.",
+              f"<b>Classifier</b>: Dense({cf['dense']['units']}, ReLU, L2 {cf['l2']}) - Dropout {cf['dense']['dropout']} - Dense(8, softmax) giving eight probabilities that sum to one."])
+S += [P("Loss is sparse categorical cross-entropy with balanced class weights; the optimiser is Adam. The attention layer is a registered custom Keras layer so that checkpoints save and load reliably "
+        "(a Keras notice about its un-built sub-layers appears when loading; the model nevertheless loads, predicts and reproduces the training-time outputs).")]
 
-# ------------------------------------------------------------------ 7 evaluation
-S += [PageBreak(), P("7. Evaluation Methodology", H1),
-      P("All reported numbers come from the <b>test actors only</b>, which are not used for training, hyper-parameter tuning or early stopping. The primary metric is <b>macro-F1</b>; "
-        "weighted-F1, micro-F1 and accuracy are reported for completeness together with per-class precision, recall and F1, and row-normalised confusion matrices."),
-      P("8. Results", H1)]
-if SYN: S.append(P("<b>The numbers below come from the synthetic smoke-test dataset.</b> They validate the code path only. Replace them by running the real RAVDESS experiment.", WARN))
-S += [P("8.1 Overall F1-scores", H2),
-      table([["Model", "Macro-F1", "Weighted-F1", "Micro-F1", "Accuracy"],
-             ["SVM baseline (MFCC statistics)", f4(svm["macro_f1"]), f4(svm["weighted_f1"]), f4(svm["micro_f1"]), f4(svm["accuracy"])],
-             ["CNN-BiLSTM-Attention (proposed)", f4(deep["macro_f1"]), f4(deep["weighted_f1"]), f4(deep["micro_f1"]), f4(deep["accuracy"])]], [6.2, 2.5, 2.7, 2.5, 2.5], hl_rows=(2,)),
-      Spacer(1, .3 * cm),
-      P(f"The deep model changes macro-F1 by <b>{deep['macro_f1'] - svm['macro_f1']:+.4f}</b> relative to the baseline. Validation macro-F1 of the selected checkpoint was {f4(M['deep_val']['macro_f1'])}."),
-      P("8.2 Per-class results (proposed model)", H2)]
-rows = [["Emotion", "Precision", "Recall", "F1", "Support"]] + [[k, f4(v["precision"]), f4(v["recall"]), f4(v["f1"]), str(v["support"])] for k, v in deep["per_class"].items()]
-S += [table(rows, [4, 3, 3, 3, 3]), Spacer(1, .4 * cm), fig("f1_per_class.png", 14, "Figure 5 - Per-class F1: baseline vs proposed model."),
-      fig("training_curves.png", 15, "Figure 6 - Training and validation loss / accuracy."),
-      fig("confusion_matrix.png", 12.5, "Figure 7 - Row-normalised confusion matrix of the proposed model on test speakers."),
-      fig("confusion_matrix_svm.png", 11, "Figure 8 - Confusion matrix of the SVM baseline.")]
-best = max(deep["per_class"].items(), key=lambda kv: kv[1]["f1"]); worst = min(deep["per_class"].items(), key=lambda kv: kv[1]["f1"])
-S += [P("9. Discussion", H1),
-      P(f"The best-recognised class was <b>{best[0]}</b> (F1 {f4(best[1]['f1'])}) and the weakest was <b>{worst[0]}</b> (F1 {f4(worst[1]['f1'])}). "
-        "Inspect the confusion matrix for systematic confusions: on real acted speech, emotions with similar arousal (for example calm and neutral, or fearful and surprised) are commonly confused, because MFCCs mainly encode spectral envelope and arousal rather than valence."),
-      P("9.1 Limitations", H2)]
-S += bullets(["RAVDESS is <i>acted</i> speech from 24 speakers with two sentences; spontaneous, noisy or multilingual speech will behave differently.",
-              "With four test actors the F1 estimate has noticeable variance; repeated runs with different actor splits (leave-speakers-out cross-validation) give a more reliable estimate.",
-              "Only MFCC features are used, as required; prosodic features (pitch, energy) or self-supervised embeddings could add valence information.",
-              "No demographic fairness analysis was performed."])
-S += [P("9.2 Future work", H2)]
-S += bullets(["Speaker-grouped k-fold cross-validation and confidence intervals.", "SpecAugment-style masking and mixup; additional corpora (TESS, CREMA-D, EMO-DB) for cross-corpus evaluation.",
-              "Transformer / wav2vec-style encoders fine-tuned with the same evaluation protocol.", "Real-time microphone demo and a REST API."])
-S += [P("10. Conclusion", H1),
-      P("The project delivers every element of the problem statement: data collection from RAVDESS, a documented pre-processing and MFCC feature pipeline, a CNN-BiLSTM-Attention implementation, "
-        "and an F1-score-centred evaluation under a speaker-independent protocol, together with a classical baseline, unit tests and a one-command reproducible workflow."),
-      P("11. How to Reproduce", H1),
-      P("pip install -r requirements.txt<br/>python run_pipeline.py --download --data data/RAVDESS<br/>python build_report.py --name \"Your Name\"<br/>python build_ppt.py --name \"Your Name\"<br/>python predict.py path/to/clip.wav<br/>pytest -q", CODE),
+# ------------------------------------------------------------------ 7 SVM
+S += [P("7. SVM Baseline", H1),
+      P(f"A classical baseline shows how much the deep model adds. Every clip is summarised by the mean and standard deviation of each of the 120 features over time (240 numbers). A standardiser (fitted on training data only) and an "
+        f"RBF-kernel SVM with balanced class weights are trained on the same actor-independent training set. The hyper-parameters C in {{1, 10, 100}} and gamma in {{scale, 0.001, 0.01}} are chosen by Macro F1 on the "
+        f"<b>validation actors only</b> (selected: C = {SVM['params']['C']}, gamma = {SVM['params']['gamma']}); the final baseline is then evaluated once on the test actors. It uses the same class-label order as the deep model.")]
+
+# ------------------------------------------------------------------ 8 methodology
+S += [P("8. Experimental Methodology", H1), P("8.1 Actor-independent data split", H2),
+      P("Actors 1-16 form the training set, 17-20 the validation set and 21-24 the test set. The code asserts that no actor appears in two partitions. A random clip-level split would put the same voices in training and test "
+        "data and overstate performance, because the model could recognise the speaker instead of the emotion."),
+      P("8.2 Training configuration (selected model)", H2),
+      table([["Setting", "Value"], ["Optimiser / learning rate", "Adam, 1e-3; halved after 4 epochs without validation-loss improvement (minimum 1e-5)"], ["Loss / class weights", "Sparse categorical cross-entropy / balanced"],
+             ["Batch size / maximum epochs", f"32 / 60"], ["Checkpoint selection", f"validation Macro F1 (best epoch {SEL['best_epoch']} of {SEL['epochs_run']} run)"],
+             ["Early stopping", "12 epochs without validation Macro F1 improvement"], ["Random seed", str(DS["seed"])], ["Training time", f"{SEL['training_seconds']:.0f} s on CPU"],
+             ["Software (project environment)", "Python 3.13, TensorFlow 2.21.0, Keras 3.15.1, librosa 1.0.0, scikit-learn"]], [5.4, 11], left=True),
+      P("8.3 Evaluation metrics", H2),
+      P("On the test actors the report gives accuracy, macro precision, macro recall, Macro F1, weighted F1, per-class precision/recall/F1 and the confusion matrix, always over all eight labels. "
+        "Every figure is recomputed from the saved confusion matrix and checked against the stored value by <font name='Courier'>summarize_results.py</font> and by the unit tests."),
+      P("8.4 Experiment log", H2)]
+chg = {"experiment_01": "First full model (3 Conv1D blocks, BiLSTM 96, Dense 128); checkpoint by validation loss.",
+       "experiment_02": "Compact network (2 Conv1D blocks, BiLSTM 48, Dense 64), stronger regularisation; checkpoint by validation loss.",
+       "experiment_03": "Same compact network; checkpoint and early stopping on validation Macro F1; up to 60 epochs.",
+       "experiment_04": "Compact network with slightly stronger dropout (0.35 / 0.40 / 0.35 / 0.50)."}
+rows = [["Experiment", "Change", "Params", "Val Macro F1", "Test Macro F1"]]
+for k in ("experiment_01", "experiment_02", "experiment_03", "experiment_04"):
+    r = EXPS[k]
+    rows.append([r["label"], Paragraph(chg[k], ParagraphStyle("cell", parent=BODY, fontSize=8.3, leading=10.5, alignment=0)),
+                 f"{r['params']:,}" if r["status"] == "completed" else "-", f4(r["val_macro_f1"]) if r["status"] == "completed" else "not run", f4(r["test_macro_f1"]) if r["status"] == "completed" else "not run"])
+S += [table(rows, [2.5, 7.4, 1.9, 2.3, 2.3], hl_rows=(3,) if SEL["experiment"] == "experiment_03" else ()),
+      Spacer(1, .2 * cm),
+      P(("<b>Experiment 4 (completed, single run, seed 42):</b> validation Macro F1 " + f4(EXPS["experiment_04"]["val_macro_f1"]) + ", test Macro F1 " + f4(EXPS["experiment_04"]["test_macro_f1"]) +
+         " versus " + f4(EXPS["experiment_03"]["val_macro_f1"]) + " / " + f4(EXPS["experiment_03"]["test_macro_f1"]) + " for Experiment 3. Stronger dropout did not improve generalisation in this run, so Experiment 3 remains the final model.")
+        if E4 else f"<b>Experiment 4 status:</b> {S_['experiment_4_status']}", WARN)]
+
+# ------------------------------------------------------------------ 9 results
+S += [PageBreak(), P("9. Results and Comparison", H1), P("9.1 Overall comparison", H2)]
+rows = [["Model", "Val Macro F1", "Test acc.", "Test Macro F1", "Test weighted F1"]]
+for r in done: rows.append([f"{r['label']} - deep model", f4(r["val_macro_f1"]), f4(r["test_accuracy"]), f4(r["test_macro_f1"]), f4(r["test_weighted_f1"])])
+rows.append(["SVM baseline (MFCC statistics)", "-", f4(SVM["test_accuracy"]), f4(SVM["test_macro_f1"]), f4(SVM["test_weighted_f1"])])
+S += [table(rows, [6.4, 2.5, 2.4, 2.6, 2.7], hl_rows=(1 + [r["experiment"] for r in done].index(SEL["experiment"]),)), Spacer(1, .3 * cm), fig("comparison_macro_f1.png", 12.5, "Figure 5 - Validation and test Macro F1 of every completed experiment and the SVM baseline."),
+      P(f"<b>Selected final model: {SEL['label']}.</b> It has the highest validation Macro F1 ({f4(SEL['validation_macro_f1'])}) of the completed experiments, so it ranks first under the validation-only selection rule used for this project; it also has the highest test Macro F1. "
+        f"Its test Macro F1 is {SEL['gain_over_svm_macro_f1']:+.4f} higher than the SVM baseline (macro precision {f4(T['macro_precision'])}, macro recall {f4(T['macro_recall'])}). "
+        "Because the test set has only 240 clips from 4 actors, differences of a few F1 points between experiments are within plausible sampling noise and should not be over-interpreted. "
+        "Note also that Experiments 1-3 were compared while test results were visible, so the test figure is a slightly optimistic estimate; the validation ranking points in the same direction.")]
+S += [P("9.2 Classification report (test set, selected model)", H2)]
+rows = [["Emotion", "Precision", "Recall", "F1", "Support"]] + [[k, f4(v["precision"]), f4(v["recall"]), f4(v["f1"]), str(v["support"])] for k, v in pc.items()]
+rows.append(["macro average", f4(T["macro_precision"]), f4(T["macro_recall"]), f4(T["macro_f1"]), str(sum(v["support"] for v in pc.values()))])
+S += [table(rows, [4.2, 3, 3, 3, 3], hl_rows=(len(rows) - 1,)), Spacer(1, .3 * cm), fig("per_class_prf.png", 13.5, "Figure 6 - Per-class precision, recall and F1 on the test actors."),
+      fig("training_curves.png", 15, "Figure 7 - Training and validation loss / accuracy of the selected run."),
+      KeepTogether([P("9.3 Confusion matrix", H2), fig("final_confusion_matrix.png", 12.5, "Figure 8 - Row-normalised confusion matrix of the selected model (rows: true emotion, columns: predicted).")]),
+      fig("confusion_matrix_svm.png", 11, "Figure 9 - Confusion matrix of the SVM baseline for comparison.")]
+
+# ------------------------------------------------------------------ 10 discussion
+S += [P("10. Discussion", H1), P("10.1 What was observed", H2)]
+S += bullets([f"The best recognised emotion was <b>{best[0]}</b> (F1 {f4(best[1]['f1'])}); the weakest was <b>{worst[0]}</b> (F1 {f4(worst[1]['f1'])}, recall {f4(worst[1]['recall'])}).",
+              "Lowest recalls: " + ", ".join(f"<b>{k}</b> {f4(v['recall'])}" for k, v in low_rec) + ". Highest recall: <b>angry</b> " + f4(pc['angry']['recall']) + ".",
+              f"<b>Neutral is over-predicted</b>: the model assigned {int(npred[0])} test clips to neutral although only {pc['neutral']['support']} are neutral, giving neutral a precision of just {f4(pc['neutral']['precision'])}.",
+              "Most frequent confusions (true -> predicted): " + "; ".join(f"{c['true']} -> {c['predicted']} ({c['count']} clips, {c['share_of_true_class']:.0%})" for c in tc[:6]) + ".",
+              f"<b>Fearful</b> speech is rarely predicted wrongly (precision {f4(pc['fearful']['precision'])}) but is often missed (recall {f4(pc['fearful']['recall'])}): the model is cautious about this class."])
+S += [P("10.2 Possible explanations (not experimentally tested)", H2),
+      P("The following are plausible hypotheses, not proven causes. (i) Sad, calm and neutral speech share low energy and slow, flat delivery, so MFCC-based features may overlap; this would fit the confusions of sad with calm and neutral. "
+        "(ii) Angry, disgust, fearful and happy speech can share high arousal, which may explain confusions between them. (iii) With only 16 training actors the model may learn actor-specific habits, which would hurt unseen actors. "
+        "(iv) Four test actors give a noisy estimate, so a few clips shift a class recall noticeably. Testing these hypotheses would require additional experiments (for example per-actor analysis or cross-validation over actors).")]
+
+# ------------------------------------------------------------------ 11 limitations
+S += [P("11. Limitations", H1)]
+S += bullets(["<b>Small, acted dataset</b>: 1,440 clips, 24 actors, two sentences; natural, spontaneous or noisy speech was not evaluated, and the model must not be assumed to understand human emotion in general.",
+              "<b>Unseen speakers</b>: generalisation is measured on only four test actors; an unlucky or lucky actor split can move the scores.",
+              "<b>Class imbalance</b>: neutral has half as many clips as the other classes (handled with class weights, which does not remove the effect completely).",
+              f"<b>Test-set exposure</b>: Experiments 1-3 were compared with test results visible, so the final test score is mildly optimistic" + (" (Experiment 4 was selected or rejected by the validation-only rule)." if E4 else "."),
+              "<b>Features</b>: only MFCC-based features were used, as required; no pitch/energy features, no noise-robustness or cross-corpus tests.",
+              ("<b>Experiment 4 is a single run</b>: the stronger-dropout variant was trained once with one seed, so its difference from Experiment 3 may be within run-to-run variation." if E4 else "<b>Experiment 4 not executed</b>: the stronger-dropout variant is implemented and verified on synthetic audio only because the RAVDESS data was not available in the build environment; no result for it is claimed."),
+              "<b>Ethics</b>: emotion recognition can be misused for surveillance or high-stakes decisions; this system is a research prototype and no demographic fairness analysis was carried out."])
+
+# ------------------------------------------------------------------ 12-13
+S += [P("12. Conclusion", H1),
+      P(f"The project delivers every element of the problem statement: data collection from RAVDESS, a documented preprocessing and MFCC pipeline, a CNN-BiLSTM-Attention implementation and an F1-centred evaluation under an actor-independent protocol. "
+        f"The selected model reaches a test Macro F1 of {f4(T['macro_f1'])} (accuracy {pct(T['accuracy'])}), clearly above the SVM baseline ({f4(SVM['test_macro_f1'])}) and the first deep model, but performance is far from perfect and uneven across emotions, "
+        "particularly for sad and fearful speech. The results are an honest, reproducible baseline for acted speech rather than evidence of general emotion understanding."),
+      P("13. Future Improvements", H1)]
+S += bullets([("Repeat the Experiment 3 / 4 comparison with several random seeds to separate real gains from run-to-run variation." if E4 else "Run Experiment 4 on RAVDESS and, if its validation Macro F1 is higher, compare it fairly with Experiment 3 (the runner and model are ready)."),
+              "Actor-grouped k-fold cross-validation with confidence intervals for a more reliable estimate.",
+              "SpecAugment-style masking, mixup, and additional corpora (TESS, CREMA-D, EMO-DB) for cross-corpus evaluation.",
+              "Additional prosodic features (pitch, energy) or pre-trained speech encoders, evaluated with the same protocol.",
+              "A real-time microphone demo and an API, with explicit user-consent and privacy safeguards."])
+
+# ------------------------------------------------------------------ reproducibility + references
+S += [P("14. Reproducibility", H1),
+      P("python -m venv .venv<br/>.\\.venv\\Scripts\\Activate.ps1<br/>pip install -r requirements.txt<br/>python -m pytest -q<br/>python summarize_results.py<br/>python predict.py path\\to\\clip.wav<br/>python build_report.py --name \"Your Name\"<br/>python build_ppt.py --name \"Your Name\"", CODE),
       P("Project structure", H2),
-      P("ser/config.py - settings | ser/data.py - download, metadata, split | ser/features.py - preprocessing, MFCC, augmentation | ser/model.py - network | "
-        "ser/train.py - SVM and deep training | ser/evaluate.py - F1 metrics and plots | run_pipeline.py - orchestration | predict.py - inference | tests/ - unit tests", BODY),
+      P("ser/config.py - settings | ser/data.py - download, labels, split | ser/features.py - preprocessing, MFCC, augmentation | ser/model.py - Experiment 1-3 network | ser/model_exp4.py - Experiment 4 network | "
+        "ser/train.py, ser/train_exp4.py - training | ser/evaluate.py - metrics and plots | ser/final.py - result verification and model selection | predict.py - inference | tests/ - automated tests", BODY),
       P("References", H1)]
 refs = ["Livingstone, S. R. and Russo, F. A. (2018). The Ryerson Audio-Visual Database of Emotional Speech and Song (RAVDESS). PLoS ONE 13(5): e0196391.",
         "Davis, S. and Mermelstein, P. (1980). Comparison of parametric representations for monosyllabic word recognition in continuously spoken sentences. IEEE Trans. ASSP 28(4), 357-366.",
@@ -242,11 +328,9 @@ refs = ["Livingstone, S. R. and Russo, F. A. (2018). The Ryerson Audio-Visual Da
         "Srivastava, N. et al. (2014). Dropout: a simple way to prevent neural networks from overfitting. JMLR 15, 1929-1958.",
         "Bahdanau, D., Cho, K. and Bengio, Y. (2015). Neural machine translation by jointly learning to align and translate. ICLR.",
         "McFee, B. et al. (2015). librosa: Audio and music signal analysis in Python. Proc. SciPy.",
-        "Pedregosa, F. et al. (2011). Scikit-learn: machine learning in Python. JMLR 12, 2825-2830."]
-S += [Paragraph(f"[{i}] {r}", ParagraphStyle("ref", parent=BODY, fontSize=9, leading=12.5, leftIndent=18, firstLineIndent=-18, alignment=0)) for i, r in enumerate(refs, 1)]
+        "Pedregosa, F. et al. (2011). Scikit-learn: machine learning in Python. JMLR 12, 2825-2830.",
+        "Akcay, M. B. and Oguz, K. (2020). Speech emotion recognition: emotional models, databases, features, preprocessing methods, supporting modalities, and classifiers. Speech Communication 116, 56-76."]
+S += [Paragraph(f"[{i}] {r}", ParagraphStyle("ref", parent=BODY, fontSize=8.4, leading=10.6, leftIndent=18, firstLineIndent=-18, alignment=0, spaceAfter=2)) for i, r in enumerate(refs, 1)]
 
-# cover uses template 0; switch to body template after the cover page
-from reportlab.platypus import NextPageTemplate
-S.insert(0, NextPageTemplate("body"))
 Doc(args.out).multiBuild(S)
 print("wrote", args.out)

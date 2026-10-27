@@ -1,0 +1,397 @@
+{
+  "project": "Speech Emotion Recognition - MFCC + CNN-BiLSTM-Attention (RAVDESS)",
+  "dataset": {
+    "name": "RAVDESS (speech)",
+    "clips": 1440,
+    "actors": 24,
+    "class_counts": {
+      "neutral": 96,
+      "calm": 192,
+      "happy": 192,
+      "sad": 192,
+      "angry": 192,
+      "fearful": 192,
+      "disgust": 192,
+      "surprised": 192
+    },
+    "split": {
+      "train_clips": 960,
+      "val_clips": 240,
+      "test_clips": 240,
+      "train_actors": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "val_actors": [
+        17,
+        18,
+        19,
+        20
+      ],
+      "test_actors": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "train_after_aug": 2880
+    },
+    "labels": [
+      "neutral",
+      "calm",
+      "happy",
+      "sad",
+      "angry",
+      "fearful",
+      "disgust",
+      "surprised"
+    ],
+    "seed": 42,
+    "features": {
+      "shape": [
+        130,
+        120
+      ],
+      "sr": 22050,
+      "n_mfcc": 40,
+      "hop": 512,
+      "duration": 3.0,
+      "n_fft": 2048,
+      "n_mels": 128
+    }
+  },
+  "experiments": [
+    {
+      "experiment": "experiment_01",
+      "label": "Experiment 1",
+      "status": "completed",
+      "title": "Wide CNN-BiLSTM-Attention (first full model)",
+      "params": 341064,
+      "epochs_run": 17,
+      "best_epoch": 5,
+      "training_seconds": 83.1,
+      "val_macro_f1": 0.4484411740426418,
+      "val_accuracy": 0.4708333333333333,
+      "test_accuracy": 0.4708333333333333,
+      "test_macro_precision": 0.529256320251386,
+      "test_macro_recall": 0.49609375,
+      "test_macro_f1": 0.4292250777096206,
+      "test_weighted_f1": 0.4322693066345542,
+      "integrity_ok": true
+    },
+    {
+      "experiment": "experiment_02",
+      "label": "Experiment 2",
+      "status": "completed",
+      "title": "Compact CNN-BiLSTM-Attention",
+      "params": 79080,
+      "epochs_run": 24,
+      "best_epoch": 12,
+      "training_seconds": 147.3,
+      "val_macro_f1": 0.48726073550262705,
+      "val_accuracy": 0.49583333333333335,
+      "test_accuracy": 0.5375,
+      "test_macro_precision": 0.5910323298504935,
+      "test_macro_recall": 0.53515625,
+      "test_macro_f1": 0.5231256383296231,
+      "test_weighted_f1": 0.5342969771812276,
+      "integrity_ok": true
+    },
+    {
+      "experiment": "experiment_03",
+      "label": "Experiment 3",
+      "status": "completed",
+      "title": "Compact CNN-BiLSTM-Attention, checkpoint by validation Macro F1",
+      "params": 79080,
+      "epochs_run": 24,
+      "best_epoch": 12,
+      "training_seconds": 170.3,
+      "val_macro_f1": 0.5161028987146642,
+      "val_accuracy": 0.5208333333333334,
+      "test_accuracy": 0.5666666666666667,
+      "test_macro_precision": 0.5742779535481398,
+      "test_macro_recall": 0.57421875,
+      "test_macro_f1": 0.5306963174440951,
+      "test_weighted_f1": 0.5384031159655254,
+      "integrity_ok": true
+    },
+    {
+      "experiment": "experiment_04",
+      "label": "Experiment 4",
+      "status": "completed",
+      "title": "Compact CNN-BiLSTM-Attention + stronger dropout",
+      "params": 79080,
+      "epochs_run": 38,
+      "best_epoch": 26,
+      "training_seconds": 204.0,
+      "val_macro_f1": 0.47943195828094765,
+      "val_accuracy": 0.4791666666666667,
+      "test_accuracy": 0.5,
+      "test_macro_precision": 0.5084903985856285,
+      "test_macro_recall": 0.51171875,
+      "test_macro_f1": 0.4783240851296227,
+      "test_weighted_f1": 0.4768790241382642,
+      "integrity_ok": true
+    }
+  ],
+  "svm_baseline": {
+    "params": {
+      "C": 100,
+      "gamma": 0.001
+    },
+    "test_accuracy": 0.4666666666666667,
+    "test_macro_f1": 0.44641766838533914,
+    "test_weighted_f1": 0.4623857428294193,
+    "test_macro_precision": 0.48450057633525373,
+    "test_macro_recall": 0.44921875,
+    "note": "identical across experiments (same split, features and tuning on validation actors only)"
+  },
+  "selected_final_model": {
+    "experiment": "experiment_03",
+    "label": "Experiment 3",
+    "title": "Compact CNN-BiLSTM-Attention, checkpoint by validation Macro F1",
+    "checkpoint": "models/experiment_03/ser_model_best.keras",
+    "normaliser": "models/experiment_03/norm.npz",
+    "selection_rule": "highest validation Macro F1 among completed real-data experiments (test set not used for selection)",
+    "config": {
+      "gaussian_noise": 0.08,
+      "conv1": {
+        "filters": 32,
+        "kernel": 5,
+        "dropout": 0.3
+      },
+      "conv2": {
+        "filters": 64,
+        "kernel": 3,
+        "dropout": 0.35
+      },
+      "lstm": {
+        "units": 48,
+        "dropout": 0.3
+      },
+      "attention_units": 32,
+      "dense": {
+        "units": 64,
+        "dropout": 0.5
+      },
+      "l2": 0.0002
+    },
+    "parameters": 79080,
+    "best_epoch": 12,
+    "epochs_run": 24,
+    "training_seconds": 170.3,
+    "validation_macro_f1": 0.5161028987146642,
+    "test": {
+      "accuracy": 0.5666666666666667,
+      "macro_precision": 0.5742779535481398,
+      "macro_recall": 0.57421875,
+      "macro_f1": 0.5306963174440951,
+      "weighted_f1": 0.5384031159655254,
+      "per_class": {
+        "neutral": {
+          "precision": 0.2972972972972973,
+          "recall": 0.6875,
+          "f1": 0.41509433962264153,
+          "support": 16
+        },
+        "calm": {
+          "precision": 0.5897435897435898,
+          "recall": 0.71875,
+          "f1": 0.6478873239436619,
+          "support": 32
+        },
+        "happy": {
+          "precision": 0.4782608695652174,
+          "recall": 0.34375,
+          "f1": 0.4,
+          "support": 32
+        },
+        "sad": {
+          "precision": 0.45454545454545453,
+          "recall": 0.15625,
+          "f1": 0.2325581395348837,
+          "support": 32
+        },
+        "angry": {
+          "precision": 0.5918367346938775,
+          "recall": 0.90625,
+          "f1": 0.7160493827160493,
+          "support": 32
+        },
+        "fearful": {
+          "precision": 0.8,
+          "recall": 0.25,
+          "f1": 0.38095238095238093,
+          "support": 32
+        },
+        "disgust": {
+          "precision": 0.6111111111111112,
+          "recall": 0.6875,
+          "f1": 0.6470588235294118,
+          "support": 32
+        },
+        "surprised": {
+          "precision": 0.7714285714285715,
+          "recall": 0.84375,
+          "f1": 0.8059701492537314,
+          "support": 32
+        }
+      },
+      "confusion_matrix": [
+        [
+          11,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          23,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0
+        ],
+        [
+          8,
+          1,
+          11,
+          0,
+          2,
+          1,
+          1,
+          8
+        ],
+        [
+          8,
+          12,
+          0,
+          5,
+          1,
+          0,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          29,
+          1,
+          1,
+          0
+        ],
+        [
+          3,
+          0,
+          5,
+          6,
+          7,
+          8,
+          3,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          7,
+          0,
+          22,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          3,
+          0,
+          1,
+          27
+        ]
+      ]
+    },
+    "top_confusions": [
+      {
+        "true": "sad",
+        "predicted": "calm",
+        "count": 12,
+        "share_of_true_class": 0.375
+      },
+      {
+        "true": "happy",
+        "predicted": "neutral",
+        "count": 8,
+        "share_of_true_class": 0.25
+      },
+      {
+        "true": "happy",
+        "predicted": "surprised",
+        "count": 8,
+        "share_of_true_class": 0.25
+      },
+      {
+        "true": "sad",
+        "predicted": "neutral",
+        "count": 8,
+        "share_of_true_class": 0.25
+      },
+      {
+        "true": "calm",
+        "predicted": "neutral",
+        "count": 7,
+        "share_of_true_class": 0.21875
+      },
+      {
+        "true": "fearful",
+        "predicted": "angry",
+        "count": 7,
+        "share_of_true_class": 0.21875
+      },
+      {
+        "true": "disgust",
+        "predicted": "angry",
+        "count": 7,
+        "share_of_true_class": 0.21875
+      },
+      {
+        "true": "sad",
+        "predicted": "disgust",
+        "count": 6,
+        "share_of_true_class": 0.1875
+      }
+    ],
+    "gain_over_svm_macro_f1": 0.08427864905875593
+  },
+  "experiment_4_status": "completed",
+  "limitations": [
+    "RAVDESS is acted speech from 24 actors and two sentences; real-world, noisy or spontaneous speech will behave differently.",
+    "The test set contains 240 clips from 4 actors, so every metric has substantial sampling variance; differences of a few F1 points between experiments are not statistically established.",
+    "Experiments 1-3 were compared using test results as well as validation results, so the reported test score is slightly optimistic as an estimate of unseen-data performance.",
+    "Sad and fearful speech have low recall; neutral is over-predicted (low precision). Explanations (acoustic similarity, small data) are plausible but were not tested experimentally.",
+    "Only MFCC-based features were used; no cross-corpus or noise-robustness evaluation was performed."
+  ]
+}

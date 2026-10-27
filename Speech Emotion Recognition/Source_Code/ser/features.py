@@ -18,7 +18,12 @@ def fix_length(y: np.ndarray, n: int) -> np.ndarray:
 
 
 def load_audio(path: str, a: AudioCfg) -> np.ndarray:
-    y, _ = librosa.load(path, sr=a.sr, mono=True)
+    try:
+        y, _ = librosa.load(path, sr=a.sr, mono=True)
+    except Exception as exc:                               # corrupt / unsupported file -> clear error
+        raise ValueError(f"Could not decode audio file '{path}': {exc}") from exc
+    if y.size == 0 or not np.any(y):
+        raise ValueError(f"Audio file '{path}' is empty or completely silent.")
     y, _ = librosa.effects.trim(y, top_db=a.top_db)       # remove leading / trailing silence
     y = y / (np.abs(y).max() + 1e-9)                       # peak normalisation
     return fix_length(y, a.n_samples).astype(np.float32)

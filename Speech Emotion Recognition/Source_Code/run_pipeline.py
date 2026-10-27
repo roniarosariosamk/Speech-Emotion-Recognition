@@ -24,6 +24,7 @@ def main():
     ap.add_argument("--epochs", type=int); ap.add_argument("--aug", type=int); ap.add_argument("--seed", type=int)
     ap.add_argument("--actors", type=int, default=24, help="synthetic only")
     ap.add_argument("--per-emotion", type=int, default=4, help="synthetic only")
+    ap.add_argument("--overwrite", action="store_true", help="allow replacing existing outputs of this experiment")
     args = ap.parse_args()
 
     cfg = Cfg()
@@ -31,6 +32,8 @@ def main():
     if args.aug is not None: cfg.train.aug_copies = args.aug
     if args.seed: cfg.train.seed = args.seed
     res, mdl = ROOT / "results", ROOT / "models"
+    if (res / "metrics.json").exists() and not args.overwrite:
+        raise SystemExit(f"{res / 'metrics.json'} already exists - refusing to overwrite a finished experiment. Use --overwrite to replace it.")
     res.mkdir(exist_ok=True); mdl.mkdir(exist_ok=True)
 
     # 1 ── data collection
