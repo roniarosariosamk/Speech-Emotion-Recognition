@@ -1,4 +1,4 @@
-"""Collect experiment results, verify them, select the final model and build the final summary.
+﻿"""Collect experiment results, verify them, select the final model and build the final summary.
 
 Model-selection rule (defensible and test-set-free): among completed experiments trained on REAL RAVDESS data,
 choose the one with the highest VALIDATION Macro F1. Test scores are reported next to it but never used to select.
@@ -130,7 +130,7 @@ def build_summary(force: str | None = None) -> dict:
         limitations=[
             "RAVDESS is acted speech from 24 actors and two sentences; real-world, noisy or spontaneous speech will behave differently.",
             "The test set contains 240 clips from 4 actors, so every metric has substantial sampling variance; differences of a few F1 points between experiments are not statistically established.",
-            "Experiments 1-3 were compared using test results as well as validation results, so the reported test score is slightly optimistic as an estimate of unseen-data performance.",
+            "Experiment 3 was selected using validation Macro F1. However, test results were also examined when comparing Experiments 1-3, so repeated model development informed by the test results may make the reported test performance somewhat optimistic.",
             "Sad and fearful speech have low recall; neutral is over-predicted (low precision). Explanations (acoustic similarity, small data) are plausible but were not tested experimentally.",
             "Only MFCC-based features were used; no cross-corpus or noise-robustness evaluation was performed.",
         ])
@@ -160,3 +160,4 @@ def markdown(S: dict) -> str:
     L += ["\n### Most frequent test confusions (observed)\n"] + [f"- {c['true']} -> {c['predicted']}: {c['count']} clips ({c['share_of_true_class']:.0%} of {c['true']})" for c in sel["top_confusions"][:6]]
     L += ["\n## Limitations\n"] + [f"- {x}" for x in S["limitations"]]
     return "\n".join(L) + "\n"
+

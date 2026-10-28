@@ -1,4 +1,4 @@
-# Project audit and corrections
+﻿# Project audit and corrections
 
 Audit date: 25 Oct 2026. Source of truth: the files in `Source_Code/`. The RAVDESS audio was **not** part of the audited archive, so nothing could be re-trained; the audit therefore (a) read every source file, (b) loaded every saved checkpoint, (c) recomputed all metrics from the saved confusion matrices, (d) ran tests and an Experiment 4 smoke run on synthetic audio.
 
@@ -26,7 +26,7 @@ Audit date: 25 Oct 2026. Source of truth: the files in `Source_Code/`. The RAVDE
 - Harmless Keras notice when loading `AttentionPool` ("build() was called ... un-built state"): the model saves, loads and reproduces predictions, so the layer was deliberately left unchanged.
 
 ## Methodological caveats (reported honestly in the report)
-- Experiments 1-3 were compared while test results were visible; the final model choice rule is validation-only and agrees (Exp 3 has the best validation *and* test Macro F1), but the test score remains slightly optimistic.
+- Experiment 3 was selected using validation Macro F1. However, test results were also examined when comparing Experiments 1-3, so repeated model development informed by the test results may make the reported test performance somewhat optimistic.
 - Four test actors / 240 clips: differences of 1-2 F1 points are not statistically meaningful.
 
 ## Not done / not possible in this environment
@@ -37,3 +37,4 @@ Audit date: 25 Oct 2026. Source of truth: the files in `Source_Code/`. The RAVDE
 - Data: RAVDESS speech obtained from a public GitHub mirror (Zenodo was unreachable from the build sandbox); 1,440 clips, 24 actors x 60, 96 neutral + 192 per other emotion, mono 48 kHz, filenames per the official scheme. Not checksum-verified against Zenodo, but the SVM baseline reproduced **exactly** (identical confusion matrix, Macro F1 0.4464177), which would be very unlikely with different audio. One pair of byte-identical clips exists inside Actor 07 (training split), so it cannot leak between splits.
 - Experiment 4 (one run, seed 42): val Macro F1 0.4794, test accuracy 0.5000, test Macro F1 0.4783, weighted F1 0.4769, best epoch 26 of 38. Worse than Experiment 3 -> **Experiment 3 stays selected** (validation-only rule).
 - Experiments 1-3 artefacts re-checked: all 36 files byte-identical to the original upload.
+

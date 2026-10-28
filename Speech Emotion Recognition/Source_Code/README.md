@@ -1,4 +1,4 @@
-# Speech Emotion Recognition - MFCC + CNN-BiLSTM-Attention
+﻿# Speech Emotion Recognition - MFCC + CNN-BiLSTM-Attention
 
 Individual major project (Machine Learning Internship): *Develop a machine learning system for emotion recognition in speech using MFCC features and a deep learning model.*
 
@@ -98,4 +98,5 @@ python build_ppt.py --name "Your Name"                    # writes ..\Speech_Emo
 `models\experiment_0X\ser_model_best.keras` (best validation-Macro-F1 checkpoint) and `norm.npz` (training mean `mu` and std `sd`, shape 1x1x120) always belong together. Experiment 1 files are in `models\` itself.
 
 ## Known limitations
-Acted speech from 24 actors; only 4 test actors (noisy estimate); sad and fearful recall are low (0.156 and 0.250) and neutral is over-predicted; the experiment comparison used test scores as well as validation scores, so the test number is mildly optimistic; no noise-robustness or cross-corpus evaluation; Experiment 4 is a single run. This is a research prototype and not a general emotion detector. See `docs\AUDIT_REPORT.md`.
+Acted speech from 24 actors; only 4 test actors (noisy estimate); sad and fearful recall are low (0.156 and 0.250) and neutral is over-predicted; Experiment 3 was selected using validation Macro F1, but test results were also examined during comparisons of Experiments 1-3, so the reported test performance may be somewhat optimistic; no noise-robustness or cross-corpus evaluation; Experiment 4 is a single run. This is a research prototype and not a general emotion detector. See `docs\AUDIT_REPORT.md`.
+

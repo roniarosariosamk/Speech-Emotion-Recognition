@@ -1,4 +1,4 @@
-"""Generate the project report PDF from the REAL final results (results/final/final_summary.json).
+﻿"""Generate the project report PDF from the REAL final results (results/final/final_summary.json).
 
     python summarize_results.py                      # first (verifies metrics, selects model, makes figures)
     python build_report.py --name "Your Name" --roll "ID"
@@ -270,7 +270,7 @@ S += [table(rows, [6.4, 2.5, 2.4, 2.6, 2.7], hl_rows=(1 + [r["experiment"] for r
       P(f"<b>Selected final model: {SEL['label']}.</b> It has the highest validation Macro F1 ({f4(SEL['validation_macro_f1'])}) of the completed experiments, so it ranks first under the validation-only selection rule used for this project; it also has the highest test Macro F1. "
         f"Its test Macro F1 is {SEL['gain_over_svm_macro_f1']:+.4f} higher than the SVM baseline (macro precision {f4(T['macro_precision'])}, macro recall {f4(T['macro_recall'])}). "
         "Because the test set has only 240 clips from 4 actors, differences of a few F1 points between experiments are within plausible sampling noise and should not be over-interpreted. "
-        "Note also that Experiments 1-3 were compared while test results were visible, so the test figure is a slightly optimistic estimate; the validation ranking points in the same direction.")]
+        "Experiment 3 was selected using validation Macro F1. However, test results were also examined when comparing Experiments 1-3, so repeated model development informed by the test results may make the reported test performance somewhat optimistic.")]
 S += [P("9.2 Classification report (test set, selected model)", H2)]
 rows = [["Emotion", "Precision", "Recall", "F1", "Support"]] + [[k, f4(v["precision"]), f4(v["recall"]), f4(v["f1"]), str(v["support"])] for k, v in pc.items()]
 rows.append(["macro average", f4(T["macro_precision"]), f4(T["macro_recall"]), f4(T["macro_f1"]), str(sum(v["support"] for v in pc.values()))])
@@ -296,7 +296,7 @@ S += [P("11. Limitations", H1)]
 S += bullets(["<b>Small, acted dataset</b>: 1,440 clips, 24 actors, two sentences; natural, spontaneous or noisy speech was not evaluated, and the model must not be assumed to understand human emotion in general.",
               "<b>Unseen speakers</b>: generalisation is measured on only four test actors; an unlucky or lucky actor split can move the scores.",
               "<b>Class imbalance</b>: neutral has half as many clips as the other classes (handled with class weights, which does not remove the effect completely).",
-              f"<b>Test-set exposure</b>: Experiments 1-3 were compared with test results visible, so the final test score is mildly optimistic" + (" (Experiment 4 was selected or rejected by the validation-only rule)." if E4 else "."),
+              f"<b>Test-set exposure</b>: Test results were examined during comparisons of Experiments 1-3, so the reported test performance may be somewhat optimistic" + (" (Experiment 4 was selected or rejected by the validation-only rule)." if E4 else "."),
               "<b>Features</b>: only MFCC-based features were used, as required; no pitch/energy features, no noise-robustness or cross-corpus tests.",
               ("<b>Experiment 4 is a single run</b>: the stronger-dropout variant was trained once with one seed, so its difference from Experiment 3 may be within run-to-run variation." if E4 else "<b>Experiment 4 not executed</b>: the stronger-dropout variant is implemented and verified on synthetic audio only because the RAVDESS data was not available in the build environment; no result for it is claimed."),
               "<b>Ethics</b>: emotion recognition can be misused for surveillance or high-stakes decisions; this system is a research prototype and no demographic fairness analysis was carried out."])
@@ -334,3 +334,4 @@ S += [Paragraph(f"[{i}] {r}", ParagraphStyle("ref", parent=BODY, fontSize=8.4, l
 
 Doc(args.out).multiBuild(S)
 print("wrote", args.out)
+

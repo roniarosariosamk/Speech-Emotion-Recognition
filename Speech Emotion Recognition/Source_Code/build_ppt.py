@@ -1,4 +1,4 @@
-"""Generate the presentation from the REAL final results (results/final/final_summary.json).
+﻿"""Generate the presentation from the REAL final results (results/final/final_summary.json).
 
     python summarize_results.py && python build_ppt.py --name "Your Name"
 """
@@ -187,7 +187,7 @@ text(s, 6.9, 6.0, 5.8, 0.9, "Possible reasons (untested): similar low-energy del
 
 # 11 -- limitations and future work
 s = slide("Limitations and future work", "Honest assessment", "State clearly: acted speech, 4 test actors, one split. The model must not be presented as understanding human emotion in general.")
-card(s, 0.7, 1.75, 6.0, 5.0, "Limitations", ["Small, acted dataset (24 actors, 2 sentences)", "Only 4 test actors: noisy estimate", "Neutral class has half the clips", "Experiments 1-3 compared with test scores visible: mildly optimistic", "No noise / cross-corpus / fairness tests", ("Experiment 4 is a single run (one seed)" if E4 else "Experiment 4 not executed on real data")], AMBER, 19)
+card(s, 0.7, 1.75, 6.0, 5.0, "Limitations", ["Small, acted dataset (24 actors, 2 sentences)", "Only 4 test actors: noisy estimate", "Neutral class has half the clips", "Test results were examined during comparisons of Experiments 1-3: test performance may be optimistic", "No noise / cross-corpus / fairness tests", ("Experiment 4 is a single run (one seed)" if E4 else "Experiment 4 not executed on real data")], AMBER, 19)
 card(s, 6.9, 1.75, 5.8, 5.0, "Future work", [("Repeat Exp 3 vs 4 with several seeds" if E4 else "Run Experiment 4 and compare fairly"), "Actor-grouped cross-validation", "SpecAugment, mixup, more corpora (TESS, CREMA-D)", "Prosodic features / pre-trained speech encoders", "Real-time demo with privacy safeguards"], CYAN, 19)
 
 # 12 -- conclusion
@@ -199,3 +199,4 @@ rect(s, 8.6, 1.8, 4.1, 4.6, INDIGO, MSO_SHAPE.ROUNDED_RECTANGLE); text(s, 8.6, 2
 text(s, 8.8, 4.7, 3.7, 1.2, ["python predict.py clip.wav", "python summarize_results.py"], 13, C("E0E7FF"), False, PP_ALIGN.CENTER, font="Consolas")
 
 prs.save(args.out); print("wrote", args.out, "-", len(prs.slides), "slides")
+
