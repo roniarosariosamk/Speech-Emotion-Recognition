@@ -31,3 +31,6 @@ htmlcov/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Temporary Microsoft Office lock files
+~$*
