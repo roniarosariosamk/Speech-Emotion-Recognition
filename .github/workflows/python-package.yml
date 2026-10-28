@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      PYTHONPATH: "Speech Emotion Recognition/Source_Code" 
+
 
     strategy:
       fail-fast: false
