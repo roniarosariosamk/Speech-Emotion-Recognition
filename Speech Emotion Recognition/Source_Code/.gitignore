@@ -20,3 +20,10 @@ results/_smoke/
 models/_smoke/
 .pytest_cache/
 .venv/
+
+# Deployment and environment files
+.env
+.streamlit/secrets.toml
+
+# Python and Streamlit caches
+.streamlit/cache/

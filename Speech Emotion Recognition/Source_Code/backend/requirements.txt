@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+numpy
+pandas
+scipy
+librosa
+soundfile
+tensorflow==2.21.0
+keras==3.15.1
