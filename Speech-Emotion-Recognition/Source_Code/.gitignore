@@ -27,3 +27,8 @@ models/_smoke/
 
 # Python and Streamlit caches
 .streamlit/cache/
+
+.venv/
+.venv*/
+__pycache__/
+*.pyc
