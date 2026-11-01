@@ -8,12 +8,21 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from predict import predict_proba
 from ser.config import LABELS
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(
     title="Speech Emotion Recognition API",
     description="Predicts emotions from speech using our trained MFCC deep learning model.",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
