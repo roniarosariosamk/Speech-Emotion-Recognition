@@ -1,7 +1,9 @@
 import io
+import hashlib
 import requests
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import soundfile as sf
 
 
@@ -42,107 +44,256 @@ EMOTION_DETAILS = {
 st.markdown("""
 <style>
 
+/* ==========================================
+   GLOBAL APPLICATION THEME
+========================================== */
+
 .stApp {
-    background: linear-gradient(135deg, #080D1B, #111827);
+    background: radial-gradient(
+        circle at top right,
+        #1E1B4B 0%,
+        #0B1120 45%,
+        #080D1B 100%
+    );
     color: #F8FAFC;
 }
 
 .block-container {
-    padding-top: 2rem;
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
     max-width: 1200px;
 }
 
+/* ==========================================
+   HERO HEADER
+========================================== */
+
 .hero {
-    background: linear-gradient(120deg, #312E81, #4F46E5, #7C3AED);
-    padding: 38px;
-    border-radius: 22px;
+    background: linear-gradient(
+        120deg,
+        #312E81,
+        #4F46E5,
+        #7C3AED
+    );
+    padding: 45px 30px;
+    border-radius: 24px;
     text-align: center;
-    margin-bottom: 30px;
-    box-shadow: 0 10px 35px rgba(79,70,229,0.25);
+    margin-bottom: 35px;
+    box-shadow: 0 15px 45px rgba(79, 70, 229, 0.25);
+    border: 1px solid rgba(165, 180, 252, 0.2);
 }
 
 .hero h1 {
-    color: white;
-    font-size: 38px;
+    color: #FFFFFF;
+    font-size: 40px;
     font-weight: 800;
-    margin-bottom: 10px;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
 }
 
 .hero p {
     color: #E0E7FF;
-    font-size: 16px;
+    font-size: 17px;
+    line-height: 1.7;
 }
+
+/* ==========================================
+   SECTION HEADINGS
+========================================== */
 
 .section-title {
-    color: #A5B4FC;
-    font-size: 23px;
-    font-weight: 700;
-    margin-top: 20px;
-    margin-bottom: 15px;
+    color: #C4B5FD;
+    font-size: 25px;
+    font-weight: 750;
+    margin-top: 25px;
+    margin-bottom: 18px;
 }
 
+/* ==========================================
+   PREDICTION RESULT CARD
+========================================== */
+
 .result-card {
-    background: linear-gradient(135deg, #1E293B, #312E81);
-    border: 1px solid #6366F1;
-    border-radius: 20px;
-    padding: 30px;
+    background: linear-gradient(
+        135deg,
+        #1E293B,
+        #312E81
+    );
+    border: 1px solid #818CF8;
+    border-radius: 22px;
+    padding: 35px;
     text-align: center;
-    margin-top: 15px;
+    margin-top: 20px;
+    box-shadow: 0 12px 35px rgba(99, 102, 241, 0.15);
 }
 
 .result-card h2 {
-    color: white;
-    font-size: 34px;
-    margin: 10px 0;
+    color: #FFFFFF;
+    font-size: 36px;
+    font-weight: 800;
+    margin: 12px 0;
 }
 
+/* ==========================================
+   AUDIO METRIC CARDS
+========================================== */
+
 .metric-card {
-    background: #1E293B;
-    border: 1px solid #334155;
-    border-radius: 15px;
-    padding: 20px;
+    background: linear-gradient(
+        145deg,
+        #1E293B,
+        #172033
+    );
+    border: 1px solid #475569;
+    border-radius: 18px;
+    padding: 24px;
     text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    border-color: #818CF8;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.12);
 }
 
 .metric-card h3 {
     color: #A5B4FC;
     font-size: 15px;
+    font-weight: 600;
 }
 
 .metric-card p {
-    color: white;
-    font-size: 23px;
-    font-weight: bold;
+    color: #FFFFFF;
+    font-size: 25px;
+    font-weight: 800;
 }
 
+/* ==========================================
+   BUTTON DESIGN
+========================================== */
+
 div.stButton > button {
-    background: linear-gradient(90deg, #4F46E5, #9333EA);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    height: 52px;
+    background: linear-gradient(
+        90deg,
+        #4F46E5,
+        #7C3AED
+    );
+    color: #FFFFFF;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    height: 54px;
     font-size: 17px;
-    font-weight: bold;
+    font-weight: 750;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 18px rgba(79, 70, 229, 0.25);
 }
 
 div.stButton > button:hover {
-    border: 1px solid #A5B4FC;
-    color: white;
+    background: linear-gradient(
+        90deg,
+        #6366F1,
+        #9333EA
+    );
+    border: 1px solid #C4B5FD;
+    color: #FFFFFF;
+    transform: translateY(-2px);
 }
 
+/* ==========================================
+   FILE UPLOADER
+========================================== */
+
 [data-testid="stFileUploader"] {
-    background: #1E293B;
-    padding: 20px;
-    border-radius: 15px;
-    border: 1px dashed #6366F1;
+    background: rgba(30, 41, 59, 0.8);
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px dashed #818CF8;
+    transition: all 0.3s ease;
 }
+
+[data-testid="stFileUploader"]:hover {
+    border-color: #C4B5FD;
+    background: rgba(49, 46, 129, 0.25);
+}
+
+/* ==========================================
+   SIDEBAR
+========================================== */
+
+[data-testid="stSidebar"] {
+    background: #111827;
+    border-right: 1px solid #334155;
+}
+
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #C4B5FD;
+}
+
+/* ==========================================
+   AUDIO PLAYER
+========================================== */
+
+audio {
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* ==========================================
+   DIVIDERS
+========================================== */
+
+hr {
+    border-color: #334155;
+    margin-top: 25px;
+    margin-bottom: 25px;
+}
+
+/* ==========================================
+   FOOTER
+========================================== */
 
 footer {
     visibility: hidden;
 }
 
+/* ==========================================
+   RESPONSIVE DESIGN
+========================================== */
+
+@media (max-width: 768px) {
+
+    .hero {
+        padding: 30px 18px;
+    }
+
+    .hero h1 {
+        font-size: 29px;
+    }
+
+    .hero p {
+        font-size: 14px;
+    }
+
+    .section-title {
+        font-size: 21px;
+    }
+
+    .result-card {
+        padding: 22px;
+    }
+
+    .result-card h2 {
+        font-size: 28px;
+    }
+
+}
+
 </style>
 """, unsafe_allow_html=True)
+
+
 
 
 # ==========================================
@@ -209,6 +360,20 @@ uploaded_file = st.file_uploader(
     type=["wav", "mp3", "flac", "ogg"]
 )
 
+# ==========================================
+# RESET OLD PREDICTION WHEN NEW AUDIO IS UPLOADED
+# ==========================================
+
+if "previous_audio_hash" not in st.session_state:
+    st.session_state["previous_audio_hash"] = None
+
+if uploaded_file is not None:
+    audio_bytes = uploaded_file.getvalue()
+    current_audio_hash = hashlib.md5(audio_bytes).hexdigest()
+
+    if current_audio_hash != st.session_state["previous_audio_hash"]:
+        st.session_state["result"] = None
+        st.session_state["previous_audio_hash"] = current_audio_hash
 
 # ==========================================
 # AUDIO PLAYBACK
@@ -228,6 +393,14 @@ if uploaded_file is not None:
         )
 
         duration = len(audio_data) / sample_rate
+
+        # Validate audio duration
+        if duration < 1:
+            st.error(
+                "⚠️ Audio is too short! "
+                "Please upload an audio recording of at least 1 second."
+            )
+            st.stop()
 
         audio_buffer = io.BytesIO()
 
@@ -331,7 +504,7 @@ if uploaded_file is not None:
 # DISPLAY RESULTS
 # ==========================================
 
-if "result" in st.session_state:
+if st.session_state.get("result") is not None:
 
     result = st.session_state["result"]
 
@@ -390,11 +563,60 @@ if "result" in st.session_state:
         ascending=False
     )
 
-    st.bar_chart(
-        scores_df.set_index("Emotion"),
-        horizontal=True,
-        x_label="Emotion",
-        y_label="Model Score (%)"
+        # ======================================
+    # PROFESSIONAL EMOTION ANALYSIS CHART
+    # ======================================
+
+    chart_df = scores_df.sort_values(
+        by="Score",
+        ascending=True
+    )
+
+    fig = px.bar(
+        chart_df,
+        x="Score",
+        y="Emotion",
+        orientation="h",
+        text=chart_df["Score"].map(lambda x: f"{x:.2f}%")
+    )
+
+    fig.update_traces(
+        marker_color="#818CF8",
+        marker_line_color="#C4B5FD",
+        marker_line_width=1,
+        textposition="outside",
+        textfont=dict(
+            color="#FFFFFF",
+            size=13
+        ),
+        cliponaxis=False
+    )
+
+    fig.update_layout(
+        title="Emotion Score Distribution",
+        xaxis=dict(
+            title="Model Score (%)",
+            range=[0, 100],
+            ticksuffix="%",
+            dtick=10,
+            gridcolor="#334155",
+            color="#E2E8F0"
+        ),
+        yaxis=dict(
+            title="Emotion",
+            color="#E2E8F0"
+        ),
+        plot_bgcolor="#0B1120",
+        paper_bgcolor="#0B1120",
+        font=dict(color="#FFFFFF"),
+        height=430,
+        margin=dict(l=20, r=50, t=70, b=50)
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={"displayModeBar": False}
     )
 
     st.markdown("### 📋 Detailed Emotion Scores")
