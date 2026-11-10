@@ -12,6 +12,40 @@ The project includes a Streamlit frontend and a FastAPI backend.
 - **Backend:** FastAPI
 - **Deployment:** Streamlit Community Cloud and Render
 
+
+## 📸 Application Screenshots
+
+### 🏠 Homepage
+
+![Speech Emotion Recognition Homepage](screenshots/HomePage/01-homepage.png)
+
+### 🎧 Emotion Prediction
+
+**Audio Upload**
+
+![Audio Upload](screenshots/Emotion%20Prediction/01-audio-upload.png)
+
+**Prediction Result**
+
+![Prediction Result](screenshots/Emotion%20Prediction/02-prediction-result.png)
+
+**Emotion Analysis**
+
+![Emotion Analysis](screenshots/Emotion%20Prediction/03-emotion-analysis.png)
+
+**Detailed Emotion Scores**
+
+![Detailed Scores](screenshots/Emotion%20Prediction/04-detailed-scores.png)
+
+**Audio Analysis Process**
+
+![Analysis Process](screenshots/Emotion%20Prediction/analysing-process.png)
+
+**Analysis Information**
+
+![Analysis Note](screenshots/Emotion%20Prediction/analysis-note.png)
+
+
 ## 🎯 Project Objectives
 
 - Extract meaningful acoustic features from speech using MFCC.
