@@ -36,6 +36,55 @@ EMOTION_DETAILS = {
     "surprised": ("😲", "#FB923C")
 }
 
+# ==========================================
+# APPLICATION THEME CONFIGURATION
+# ==========================================
+
+if "theme" not in st.session_state:
+    st.session_state.theme = "Dark"
+
+THEMES = {
+    "Dark": {
+        "background": "#080D1B",
+        "sidebar": "#111827",
+        "text": "#F8FAFC",
+        "secondary_text": "#CBD5E1",
+        "heading": "#C4B5FD",
+        "card": "#1E293B",
+        "border": "#475569",
+        "uploader": "#1E293B",
+        "chart_background": "#0B1120",
+        "grid": "#334155"
+    },
+
+    "Light": {
+        "background": "#F8FAFC",
+        "sidebar": "#E2E8F0",
+        "text": "#0F172A",
+        "secondary_text": "#475569",
+        "heading": "#5B21B6",
+        "card": "#FFFFFF",
+        "border": "#CBD5E1",
+        "uploader": "#FFFFFF",
+        "chart_background": "#FFFFFF",
+        "grid": "#E2E8F0"
+    }
+}
+
+theme = THEMES[st.session_state.theme]
+
+st.markdown(
+    f"""
+    <style>
+    :root {{
+        --theme-text: {theme["text"]};
+        --theme-card: {theme["card"]};
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # ==========================================
 # CUSTOM CSS
@@ -290,9 +339,196 @@ footer {
 
 }
 
+/* ==========================================
+   THEME-AWARE TEXT AND UPLOADER
+========================================== */
+
+.stApp {
+    color: var(--theme-text);
+}
+
+[data-testid="stFileUploader"] section {
+    background: var(--theme-card);
+}
+
+[data-testid="stFileUploader"] section,
+[data-testid="stFileUploader"] section span,
+[data-testid="stFileUploader"] section small {
+    color: var(--theme-text) !important;
+}
+
+[data-testid="stFileUploaderDropzone"] {
+    background: var(--theme-card) !important;
+    border-color: #818CF8 !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button {
+    background: #4F46E5 !important;
+    color: white !important;
+    border: none !important;
+}
+
+[data-testid="stHeader"] {
+    background: transparent;
+}
+
+
 </style>
 """, unsafe_allow_html=True)
 
+
+# ==========================================
+# DYNAMIC DARK / LIGHT THEME CSS
+# ==========================================
+
+st.markdown(
+    f"""
+    <style>
+
+    .stApp {{
+        background: {theme["background"]};
+        color: {theme["text"]};
+    }}
+
+    [data-testid="stSidebar"] {{
+        background: {theme["sidebar"]};
+        border-right: 1px solid {theme["border"]};
+    }}
+
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li {{
+        color: {theme["text"]};
+    }}
+
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {{
+        color: {theme["heading"]};
+    }}
+
+    .section-title {{
+        color: {theme["heading"]};
+    }}
+
+    .metric-card {{
+        background: {theme["card"]};
+        border: 1px solid {theme["border"]};
+    }}
+
+    .metric-card h3 {{
+        color: {theme["heading"]};
+    }}
+
+    .metric-card p {{
+        color: {theme["text"]};
+    }}
+
+    [data-testid="stFileUploader"] {{
+        background: {theme["uploader"]};
+        border: 1px dashed #818CF8;
+    }}
+
+    hr {{
+        border-color: {theme["border"]};
+    }}
+
+/* ==========================================
+   FILE UPLOADER TEXT VISIBILITY FIX
+========================================== */
+
+[data-testid="stFileUploaderDropzone"] * {{
+    color: var(--theme-text) !important;
+}}
+
+/* Upload button */
+[data-testid="stFileUploaderDropzone"] button {{
+    background: #4F46E5 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+}}
+
+[data-testid="stFileUploaderDropzone"] button * {{
+    color: #FFFFFF !important;
+}}
+
+[data-testid="stFileUploaderDropzone"] button:hover {{
+    background: #6366F1 !important;
+}}
+
+/* Fix uploader instruction visibility */
+
+[data-testid="stFileUploaderDropzoneInstructions"] {{
+    opacity: 1 !important;
+}}
+
+[data-testid="stFileUploaderDropzoneInstructions"] * {{
+    color: var(--theme-text) !important;
+    opacity: 1 !important;
+}}
+
+/* Keep uploader file information readable */
+
+[data-testid="stFileUploader"] small {{
+    color: var(--theme-text) !important;
+    opacity: 0.85 !important;
+}}
+
+/* Strong uploader text visibility fix */
+
+[data-testid="stFileUploaderDropzoneInstructions"],
+[data-testid="stFileUploaderDropzoneInstructions"] *,
+[data-testid="stFileUploaderDropzone"] p,
+[data-testid="stFileUploaderDropzone"] span {{
+    color: {theme["text"]} !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}}
+
+
+/* Uploader instruction visibility */
+
+[data-testid="stFileUploaderDropzoneInstructions"] {{
+    opacity: 1 !important;
+    visibility: visible !important;
+}}
+
+[data-testid="stFileUploaderDropzoneInstructions"] * {{
+    color: {theme["text"]} !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}}
+
+[data-testid="stFileUploaderDropzone"] p,
+[data-testid="stFileUploaderDropzone"] span {{
+    color: {theme["text"]} !important;
+}}
+
+/* FINAL UPLOADER THEME FIX */
+
+[data-testid="stFileUploaderDropzoneInstructions"],
+[data-testid="stFileUploaderDropzoneInstructions"] * {{
+    color: {theme["text"]} !important;
+    opacity: 1 !important;
+}}
+
+[data-testid="stFileUploaderDropzone"] button {{
+    background-color: #4F46E5 !important;
+    color: #FFFFFF !important;
+}}
+
+[data-testid="stFileUploaderDropzone"] button,
+[data-testid="stFileUploaderDropzone"] button * {{
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+}}
+
+[data-testid="stFileUploaderDropzone"] button:hover {{
+    background-color: #6366F1 !important;
+}}
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 
@@ -312,10 +548,33 @@ st.markdown("""
 
 
 # ==========================================
+# THEME SWITCH CALLBACK
+# ==========================================
+
+if "theme_selector" not in st.session_state:
+    st.session_state.theme_selector = st.session_state.theme
+
+
+def update_theme():
+    st.session_state.theme = st.session_state.theme_selector
+
+# ==========================================
 # SIDEBAR
 # ==========================================
 
 with st.sidebar:
+
+    st.markdown("###  Appearance")
+
+    st.radio(
+        "Choose Theme",
+        ["Dark", "Light"],
+        horizontal=True,
+        key="theme_selector",
+        on_change=update_theme
+    )
+
+    st.divider()
 
     st.markdown("## 🎧 About the AI")
 
@@ -326,7 +585,7 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### 🧠 Model Pipeline")
+    st.markdown("###  Model Pipeline")
 
     st.write("1. Audio Upload")
     st.write("2. Audio Preprocessing")
@@ -336,7 +595,7 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### 🎭 Supported Emotions")
+    st.markdown("###  Supported Emotions")
 
     for emotion, details in EMOTION_DETAILS.items():
         st.write(f"{details[0]} {emotion.capitalize()}")
@@ -480,12 +739,11 @@ if uploaded_file is not None:
 
                 st.session_state["result"] = result
 
-            except requests.exceptions.ConnectionError:
+            except requests.exceptions.ConnectionError as error:
 
                 st.error(
-                    "Backend connection failed. "
-                    "Please check whether FastAPI is running."
-                )
+                  f"Backend connection failed: {error}"
+                )     
 
             except requests.exceptions.Timeout:
 
@@ -563,7 +821,7 @@ if st.session_state.get("result") is not None:
         ascending=False
     )
 
-        # ======================================
+    # ======================================
     # PROFESSIONAL EMOTION ANALYSIS CHART
     # ======================================
 
@@ -584,35 +842,72 @@ if st.session_state.get("result") is not None:
         marker_color="#818CF8",
         marker_line_color="#C4B5FD",
         marker_line_width=1,
-        textposition="outside",
         textfont=dict(
-            color="#FFFFFF",
-            size=13
+            color="#0F172A" if st.session_state.theme == "Light" else "#FFFFFF",
+            size=16,
+            family="Arial"
         ),
+        textposition="outside",
         cliponaxis=False
     )
 
-    fig.update_layout(
-        title="Emotion Score Distribution",
-        xaxis=dict(
-            title="Model Score (%)",
-            range=[0, 100],
-            ticksuffix="%",
-            dtick=10,
-            gridcolor="#334155",
-            color="#E2E8F0"
-        ),
-        yaxis=dict(
-            title="Emotion",
-            color="#E2E8F0"
-        ),
-        plot_bgcolor="#0B1120",
-        paper_bgcolor="#0B1120",
-        font=dict(color="#FFFFFF"),
-        height=430,
-        margin=dict(l=20, r=50, t=70, b=50)
-    )
+   
 
+    fig.update_layout(
+    title=dict(
+    text="Emotion Score Distribution",
+    font=dict(
+        color="#0F172A" if st.session_state.theme == "Light" else "#FFFFFF",
+        size=22,
+        family="Arial"
+    )
+),
+
+xaxis=dict(
+    title=dict(
+        text="Model Score (%)",
+        font=dict(
+            color="#0F172A" if st.session_state.theme == "Light" else "#FFFFFF",
+            size=15
+        )
+    ),
+    range=[0, 100],
+    ticksuffix="%",
+    dtick=10,
+    gridcolor=theme["grid"],
+    tickfont=dict(
+        color="#0F172A" if st.session_state.theme == "Light" else "#FFFFFF",
+        size=13
+    )
+),
+
+font=dict(
+    color="#0F172A" if st.session_state.theme == "Light" else "#FFFFFF"
+),
+
+plot_bgcolor=theme["chart_background"],
+paper_bgcolor=theme["chart_background"],
+   
+    yaxis=dict(
+    title=dict(
+        text="Emotion",
+        font=dict(
+            color="#0F172A",
+            size=17,
+            family="Arial"
+        )
+    ),
+    tickfont=dict(
+        color="#0F172A" if st.session_state.theme == "Light" else "#FFFFFF",
+        size=17,
+        family="Arial"
+    ),
+    showticklabels=True,
+    automargin=True,
+    showgrid=False
+),
+    )
+    
     st.plotly_chart(
         fig,
         use_container_width=True,
