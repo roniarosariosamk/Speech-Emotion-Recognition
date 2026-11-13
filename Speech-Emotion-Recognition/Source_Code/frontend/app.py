@@ -18,7 +18,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-API_URL = "https://speech-emotion-api-s5nv.onrender.com/predict"
+API_URL = "https://speech-emotion-recognition-api-ynao.onrender.com/predict"
 
 
 # ==========================================
